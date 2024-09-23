@@ -61,7 +61,7 @@ def install(path = None):
     #except Exception as e:
         #print(f"ERROR: {e}")
         #sys.exit()
-        
+    os.system(f'pip install -r {str(Path(__file__).parent / "requirements.txt")}')
     path = path or r'/usr/local/bin/' if list(filter(lambda k: k in ['linux', 'linux2', 'darwin'], [sys.platform])) else str(Path(os.getenv('SYSTEMROOT')) / 'System32')
     try:
         batmaker.Batmaker.maker(str(Path(__file__).parent / '__main__.py'), 'pipinfo', sys.executable, path)

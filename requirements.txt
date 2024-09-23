@@ -1,0 +1,4 @@
+rich
+pip_search
+argparse
+requests
