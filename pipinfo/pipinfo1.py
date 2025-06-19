@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import importlib
 #import re
+from jsoncolor import jprint
 
 sys.path.insert(0, str(Path(__file__).parent))
 BATMAKER = str(Path(__file__).parent / 'batmaker.py')
@@ -22,7 +23,7 @@ def get_package_info(package_name):
     if response.status_code == 200:
         data = response.json()
         info = data.get('info', {})
-
+        if os.getenv('DEBUG') == "1": jprint(info)
         package_info = {
             'name': info.get('name', 'N/A'),
             'version': info.get('version', 'N/A'),

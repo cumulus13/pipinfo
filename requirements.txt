@@ -1,4 +1,2 @@
 rich
-pip_search
-argparse
-requests
+rich_argparse
