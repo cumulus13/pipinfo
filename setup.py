@@ -26,11 +26,12 @@ def requirements():
 setup(
     name=NAME,
     version=get_version(),
-    packages=find_packages(exclude=["*.pipinfo1.py"]),
+    # packages=find_packages(exclude=["*.pipinfo1.py"]),
+    packages=[NAME],
     include_package_data=True,
-    package_data={
-        'pipinfo': ['batmaker.ini'],
-    },
+    # package_data={
+    #     'pipinfo': ['batmaker.ini'],
+    # },
     install_requires=requirements(),
     entry_points={
         'console_scripts': [

@@ -5,4 +5,5 @@ exclude pipinfo/pipinfo1.py
 exclude pipinfo/batmaker.py
 exclude pipinfo/batmaker.ini
 exclude pipinfo/mpath.py
+exclude pipinfo/__main__1.py
 exclude __version__.py
