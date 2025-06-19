@@ -1,9 +1,8 @@
 include README.md
-recursive-include pipinfo *.py
-include pipinfo/__version__.py
-exclude pipinfo/pipinfo1.py
-exclude pipinfo/batmaker.py
-exclude pipinfo/batmaker.ini
-exclude pipinfo/mpath.py
-exclude pipinfo/__main__1.py
+include pypi_info/__version__.py
+exclude pypi_info/pipinfo1.py
+exclude pypi_info/batmaker.py
+exclude pypi_info/batmaker.ini
+exclude pypi_info/mpath.py
+exclude pypi_info/__main__1.py
 exclude __version__.py

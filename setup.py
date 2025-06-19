@@ -1,11 +1,13 @@
 from setuptools import setup, find_packages
 from pathlib import Path
+import shutil
 
-NAME = 'pipinfo'
+NAME = 'pypi_info'
+shutil.copy('__version__.py', str(Path(NAME) / '__version__.py'))
 
 def get_version():
     try:
-        with open(f"{NAME}/__version__.py", "r") as f:
+        with open(f"{NAME.replace('-', '_')}/__version__.py", "r") as f:
              for line in f:
                  if line.strip().startswith("version"):
                      parts = line.split("=")
@@ -27,7 +29,7 @@ setup(
     name=NAME,
     version=get_version(),
     # packages=find_packages(exclude=["*.pipinfo1.py"]),
-    packages=[NAME],
+    packages=[NAME.replace("-","_")],
     include_package_data=True,
     # package_data={
     #     'pipinfo': ['batmaker.ini'],
@@ -35,7 +37,9 @@ setup(
     install_requires=requirements(),
     entry_points={
         'console_scripts': [
-            'pipinfo = pipinfo.pipinfo:main',
+            'pipinfo = pypi_info.pipinfo:main',
+            'pypi-info = pypi_info.pipinfo:main',
+            'pypi_info = pypi_info.pipinfo:main',
         ],
     },
     author="Hadi Cahyadi",

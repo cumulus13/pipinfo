@@ -467,7 +467,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="🐍 PyPI Package Information Tool - Get detailed info about Python packages",
         formatter_class=CustomRichHelpFormatter,
-        prog="pipinfo"
+        prog="pypi-info"
     )
     
     parser.add_argument(
