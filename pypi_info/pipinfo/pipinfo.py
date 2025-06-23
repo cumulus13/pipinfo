@@ -173,8 +173,9 @@ class PyPIClient:
 class PackageInfoDisplay:
     """Display package information in a beautiful format."""
     
-    def __init__(self):
+    def __init__(self, truncate = True):
         self.console = console
+        self.truncate = truncate
     
     def format_size(self, size_bytes: int) -> str:
         """Format file size in human readable format."""
@@ -248,7 +249,7 @@ class PackageInfoDisplay:
         for prop, value in basic_fields:
             if value and value != 'N/A':
                 # Truncate long values
-                if len(str(value)) > 50:
+                if len(str(value)) > 50 and self.truncate:
                     value = str(value)[:47] + "..."
                 table.add_row(prop, str(value))
         
@@ -267,7 +268,7 @@ class PackageInfoDisplay:
         for url_type, url in project_urls.items():
             if url:
                 # Truncate very long URLs
-                display_url = url if len(url) <= 60 else url[:57] + "..."
+                display_url = url if len(url) <= 60 else url[:57] + "..." if self.truncate else url
                 table.add_row(f"🌐 {url_type}", display_url)
         
         return table
@@ -293,10 +294,14 @@ class PackageInfoDisplay:
         
         for category, items in categories.items():
             category_node = tree.add(f"[bold cyan]{category}")
-            for item in items[:5]:  # Limit to 5 items per category
-                category_node.add(f"[white]{item}")
-            if len(items) > 5:
-                category_node.add(f"[dim]... and {len(items) - 5} more")
+            if self.truncate:
+                for item in items[:5]:  # Limit to 5 items per category
+                    category_node.add(f"[white]{item}")
+                if len(items) > 5:
+                    category_node.add(f"[dim]... and {len(items) - 5} more")
+            else:
+                for item in items:
+                    category_node.add(f"[white]{item}")
         
         return tree
     
@@ -404,16 +409,19 @@ class PackageInfoDisplay:
             # Try to render as markdown if it looks like markdown
             if any(marker in description for marker in ['#', '*', '`', '```', '[', '](']):
                 try:
-                    md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
+                    # md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
+                    md = Markdown(description)
                     self.console.print(Panel(md, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
                 except:
                     # Fallback to plain text
-                    desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
+                    # desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
+                    desc_text = description
                     self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
             else:
-                desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
+                # desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
+                desc_text = description
                 self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                 self.console.print()
         
@@ -523,18 +531,28 @@ def main():
         help='🔗 Show all project URLs'
     )
     
+    parser.add_argument(
+        '-f',
+        '--full',
+        action='store_false',
+        help='🖥️  Show full package information (ignore truncation)'
+    )
+    
     parser.add_argument('-v', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
     
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+        
     args = parser.parse_args()
     
     # Show help if no package specified
     if not args.package:
         parser.print_help()
         return
-    
     # Initialize client and display
     client = PyPIClient()
-    display = PackageInfoDisplay()
+    display = PackageInfoDisplay(args.full)
     
     # Get package information
     console.print(f"\n[bold blue]🔍 Searching PyPI for '{args.package}'...[/bold blue]")
