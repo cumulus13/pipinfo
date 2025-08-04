@@ -42,17 +42,19 @@ console = Console()
 
 class CustomRichHelpFormatter(RichHelpFormatter):
     """A custom RichHelpFormatter with modified styles."""
-
-    styles: dict[str, rr.StyleType] = {
-        "argparse.args": "bold #FFFF00",  # Yellow
-        "argparse.groups": "#AA55FF",     # Purple  
-        "argparse.help": "bold #00FFFF",  # Cyan
-        "argparse.metavar": "bold #FF00FF", # Magenta
-        "argparse.syntax": "underline",   # Underlined
-        "argparse.text": "white",         # White
-        "argparse.prog": "bold #00AAFF italic", # Blue italic
-        "argparse.default": "bold",       # Bold
-    }
+    try:
+        styles: Dict[str, rr.StyleType] = {
+            "argparse.args": "bold #FFFF00",  # Yellow
+            "argparse.groups": "#AA55FF",     # Purple  
+            "argparse.help": "bold #00FFFF",  # Cyan
+            "argparse.metavar": "bold #FF00FF", # Magenta
+            "argparse.syntax": "underline",   # Underlined
+            "argparse.text": "white",         # White
+            "argparse.prog": "bold #00AAFF italic", # Blue italic
+            "argparse.default": "bold",       # Bold
+        }
+    except Exceptions as e:
+        styles = {}
 
 class PyPISearchResult:
     """Represents a search result from PyPI."""
