@@ -4,13 +4,14 @@
 
 ## usage
 ```bash:
-Usage: pypi-info [-h] [-l] [-d] [-p PATH] [--version-download VERSION_DOWNLOAD] [--author] [--home] [--tags] [--urls] [-v]
+Usage: pypi-info [-h] [-l] [-d] [-p PATH] [--version-download VERSION_DOWNLOAD] [--author] [--home] [--tags] [--urls] [-s] [-r]
+                 [-v]
                  [package]
 
 🐍 PyPI Package Information Tool - Get detailed info about Python packages
 
 Positional Arguments:
-  package               📦 Package name to search for
+  package               📦 Package name or search query
 
 Options:
   -h, --help            show this help message and exit
@@ -23,6 +24,8 @@ Options:
   --home                🏠 Show home page URL
   --tags                🏷️ Show package classifiers/tags
   --urls                🔗 Show all project URLs
+  -s, --search-only     🔍 Show search results only, don't fetch detailed info
+  -r, --requirements    📋 Show package requirements/dependencies
   -v, --version         Show version
 ```
 

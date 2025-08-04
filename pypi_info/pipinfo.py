@@ -9,7 +9,7 @@ A beautiful command-line tool to fetch and display PyPI package information.
 
 import argparse
 import json
-from jsoncolor import jprint
+#from jsoncolor import jprint
 import os
 import sys
 import urllib.request
