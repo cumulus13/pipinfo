@@ -18,7 +18,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 # import tempfile
 # import shutil
-from jsoncolor import jprint
+
 try:
     from rich.console import Console
     from rich.table import Table
@@ -84,10 +84,9 @@ class PyPIClient:
             return None
     
     def download_package(self, package_name: str, version: str = None, 
-                        download_path: str = ".", progress_callback=None, source =False) -> bool:
+                        download_path: str = ".", progress_callback=None) -> bool:
         """Download package from PyPI."""
         package_info = self.get_package_info(package_name)
-        # jprint(package_info)
         if not package_info:
             return False
         
@@ -108,11 +107,10 @@ class PyPIClient:
         
         # Prefer wheel files, then source distributions
         download_file = None
-        if not source:
-            for file_info in files:
-                if file_info['packagetype'] == 'bdist_wheel':
-                    download_file = file_info
-                    break
+        for file_info in files:
+            if file_info['packagetype'] == 'bdist_wheel':
+                download_file = file_info
+                break
         
         if not download_file:
             for file_info in files:
@@ -175,9 +173,8 @@ class PyPIClient:
 class PackageInfoDisplay:
     """Display package information in a beautiful format."""
     
-    def __init__(self, truncate = True):
+    def __init__(self):
         self.console = console
-        self.truncate = truncate
     
     def format_size(self, size_bytes: int) -> str:
         """Format file size in human readable format."""
@@ -251,7 +248,7 @@ class PackageInfoDisplay:
         for prop, value in basic_fields:
             if value and value != 'N/A':
                 # Truncate long values
-                if len(str(value)) > 50 and self.truncate:
+                if len(str(value)) > 50:
                     value = str(value)[:47] + "..."
                 table.add_row(prop, str(value))
         
@@ -270,7 +267,7 @@ class PackageInfoDisplay:
         for url_type, url in project_urls.items():
             if url:
                 # Truncate very long URLs
-                display_url = url if len(url) <= 60 else url[:57] + "..." if self.truncate else url
+                display_url = url if len(url) <= 60 else url[:57] + "..."
                 table.add_row(f"🌐 {url_type}", display_url)
         
         return table
@@ -296,14 +293,10 @@ class PackageInfoDisplay:
         
         for category, items in categories.items():
             category_node = tree.add(f"[bold cyan]{category}")
-            if self.truncate:
-                for item in items[:5]:  # Limit to 5 items per category
-                    category_node.add(f"[white]{item}")
-                if len(items) > 5:
-                    category_node.add(f"[dim]... and {len(items) - 5} more")
-            else:
-                for item in items:
-                    category_node.add(f"[white]{item}")
+            for item in items[:5]:  # Limit to 5 items per category
+                category_node.add(f"[white]{item}")
+            if len(items) > 5:
+                category_node.add(f"[dim]... and {len(items) - 5} more")
         
         return tree
     
@@ -411,19 +404,16 @@ class PackageInfoDisplay:
             # Try to render as markdown if it looks like markdown
             if any(marker in description for marker in ['#', '*', '`', '```', '[', '](']):
                 try:
-                    # md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
-                    md = Markdown(description)
+                    md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
                     self.console.print(Panel(md, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
                 except:
                     # Fallback to plain text
-                    # desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
-                    desc_text = description
+                    desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
                     self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
             else:
-                # desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
-                desc_text = description
+                desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
                 self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                 self.console.print()
         
@@ -477,7 +467,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="🐍 PyPI Package Information Tool - Get detailed info about Python packages",
         formatter_class=CustomRichHelpFormatter,
-        prog="pipinfo"
+        prog="pypi-info"
     )
     
     parser.add_argument(
@@ -508,15 +498,9 @@ def main():
         '--version-download',
         help='🔢 Specific version to download (default: latest)'
     )
-
-    parser.add_argument(
-        '-s', '--source',
-        help='🔢 Download source type only',
-        action='store_true'
-    )
     
     parser.add_argument(
-        '-a', '--author',
+        '--author',
         action='store_true',
         help='👤 Show author information'
     )
@@ -528,42 +512,32 @@ def main():
     )
     
     parser.add_argument(
-        '-t', '--tags',
+        '--tags',
         action='store_true',
         help='🏷️  Show package classifiers/tags'
     )
     
     parser.add_argument(
-        '-u', '--urls',
+        '--urls',
         action='store_true',
         help='🔗 Show all project URLs'
     )
     
-    parser.add_argument(
-        '-f',
-        '--full',
-        action='store_false',
-        help='🖥️  Show full package information (ignore truncation)'
-    )
-    
     parser.add_argument('-v', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
     
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
-        
     args = parser.parse_args()
     
     # Show help if no package specified
     if not args.package:
         parser.print_help()
         return
+    
     # Initialize client and display
     client = PyPIClient()
-    display = PackageInfoDisplay(args.full)
+    display = PackageInfoDisplay()
     
     # Get package information
-    # console.print(f"\n[bold blue]🔍 Searching PyPI for '{args.package}'...[/bold blue]")
+    console.print(f"\n[bold blue]🔍 Searching PyPI for '{args.package}'...[/bold blue]")
     package_data = client.get_package_info(args.package)
     
     if not package_data:
@@ -610,7 +584,7 @@ def main():
     if args.download:
         version = args.version_download or "latest"
         console.print(f"\n[bold green]📥 Downloading {args.package} (version: {version})...[/bold green]")
-        success = client.download_package(args.package, version, args.path, source = args.source)
+        success = client.download_package(args.package, version, args.path)
         if not success:
             return
         console.print()
