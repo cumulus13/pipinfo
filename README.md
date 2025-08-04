@@ -2,6 +2,10 @@
 
 🐍 PyPI Package Information Tool - Get detailed info about Python packages
 
+
+[![Example Usage](https://github.com/cumulus13/pipinfo/raw/refs/heads/master/example_usage.gif)](https://github.com/cumulus13/pipinfo/raw/refs/heads/master/example_usage.gif)
+
+
 ## usage
 ```bash:
 Usage: pypi-info [-h] [-l] [-d] [-p PATH] [--version-download VERSION_DOWNLOAD] [--author] [--home] [--tags] [--urls] [-s] [-r]

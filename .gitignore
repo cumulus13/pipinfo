@@ -16,3 +16,5 @@ traceback.log
 __pycache__/
 *.log
 pipinfo/
+*.yml
+*.cast
