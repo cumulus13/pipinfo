@@ -1070,30 +1070,30 @@ def main():
     )
     
     parser.add_argument(
-        '--version-download',
+        '-v', '--version-download',
         help='🔢 Specific version to download (default: latest)'
     )
     
     parser.add_argument(
-        '--author',
+        '-a', '--author',
         action='store_true',
         help='👤 Show author information'
     )
     
     parser.add_argument(
-        '--home',
+        '-H', '--home',
         action='store_true',
         help='🏠 Show home page URL'
     )
     
     parser.add_argument(
-        '--tags',
+        '-t', '--tags',
         action='store_true',
         help='🏷️  Show package classifiers/tags'
     )
     
     parser.add_argument(
-        '--urls',
+        '-u', '--urls',
         action='store_true',
         help='🔗 Show all project URLs'
     )
@@ -1110,7 +1110,7 @@ def main():
         help='📋 Show package requirements/dependencies'
     )
     
-    parser.add_argument('-v', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
+    parser.add_argument('-V', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
     
     args = parser.parse_args()
     
@@ -1208,8 +1208,10 @@ def main():
         console.print(f"\n[bold green]📥 Downloading {package_name} (version: {version})...[/bold green]")
         success = client.download_package(package_name, version, args.path)
         if not success:
-            return
+            console.print(f"\n:cross_mark: [white on red]Failed to download '{package_name}'[/]")
+            # return
         console.print()
+        return
     
     # Display package information
     display.display_package_info(package_data, args.last)
