@@ -18,6 +18,13 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
+HAS_GUI = False
+try:
+    from . gui_qt5 import main as gui
+    HAS_GUI = True
+except Exception as e:
+    from gui_qt5 import main as gui
+    HAS_GUI = True
 
 try:
     from rich.console import Console
@@ -764,7 +771,7 @@ class PackageInfoDisplay:
         
         return table
     
-    def display_package_info(self, package_data: Dict[str, Any], show_last_only: bool = False):
+    def display_package_info(self, package_data: Dict[str, Any], show_last_only: bool = False, show_full: bool = False):
         """Display complete package information."""
         info = package_data.get('info', {})
         releases = package_data.get('releases', {})
@@ -832,7 +839,10 @@ class PackageInfoDisplay:
             # Try to render as markdown if it looks like markdown
             if any(marker in description for marker in ['#', '*', '`', '```', '[', '](']):
                 try:
-                    md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
+                    if show_full:
+                        md = Markdown(description)
+                    else:
+                        md = Markdown(description[:2000] + ("..." if len(description) > 2000 else ""))
                     self.console.print(Panel(md, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
                 except:
@@ -1109,6 +1119,18 @@ def main():
         action='store_true',
         help='📋 Show package requirements/dependencies'
     )
+
+    parser.add_argument(
+        '-g', '--gui',
+        action='store_true',
+        help='🖥️  Launch GUI (if available)'
+    )
+
+    parser.add_argument(
+        '-f', '--full',
+        action='store_true',
+        help='🚿 Show all'
+    )
     
     parser.add_argument('-V', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
     
@@ -1118,7 +1140,9 @@ def main():
     if not args.package:
         parser.print_help()
         return
-    
+    if args.gui:
+        gui(args.package)
+        sys.exit(0)
     # Initialize client and display
     client = PyPIClient()
     display = PackageInfoDisplay()
@@ -1214,7 +1238,7 @@ def main():
         return
     
     # Display package information
-    display.display_package_info(package_data, args.last)
+    display.display_package_info(package_data, args.last, args.full)
     
     # Final message
     console.print(f"[dim]💡 Use --download to download this package, or --help for more options[/dim]")

@@ -7,4 +7,3 @@ exclude pypi_info/batmaker.py
 exclude pypi_info/batmaker.ini
 exclude pypi_info/mpath.py
 exclude pypi_info/__main__1.py
-exclude __version__.py

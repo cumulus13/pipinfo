@@ -18,3 +18,8 @@ __pycache__/
 pipinfo/
 *.yml
 *.cast
+
+*.html
+
+pypi_info/gui_qt5.ini
+pypi_info/icon.png.0
