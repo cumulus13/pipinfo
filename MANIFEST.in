@@ -7,3 +7,18 @@ exclude pypi_info/batmaker.py
 exclude pypi_info/batmaker.ini
 exclude pypi_info/mpath.py
 exclude pypi_info/__main__1.py
+
+# Added entries (1 items) - 2025-12-05 18:56:27
+backup/
+
+# Added entries (1 items) - 2025-12-05 19:00:28
+recursive-exclude pypi_info *.ini
+
+# Added entries (1 items) - 2025-12-05 19:01:07
+pypi_info/__main__1.py
+
+# Added entries (1 items) - 2025-12-05 19:01:52
+exclude __pycache__
+
+# Added entries (1 items) - 2025-12-05 19:06:39
+recursive-include pypi_info *.gif

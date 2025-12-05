@@ -1287,30 +1287,6 @@ def main():
     # Final message
     console.print(f"[dim]💡 Use --download to download this package, or --help for more options[/dim]")
 
-def get_version():
-    """
-    Get the version of the ddf module.
-    Version is taken from the __version__.py file if it exists.
-    The content of __version__.py should be:
-    version = "0.33"
-    """
-    try:
-        version_file = Path(__file__).parent / "__version__.py"
-        if version_file.is_file():
-            with open(version_file, "r") as f:
-                for line in f:
-                    if line.strip().startswith("version"):
-                        parts = line.split("=")
-                        if len(parts) == 2:
-                            return parts[1].strip().strip('"').strip("'")
-    except Exception as e:
-        if os.getenv('TRACEBACK') and os.getenv('TRACEBACK') in ['1', 'true', 'True']:
-            console.print_exception(show_locals=False)
-        else:
-            console.log(f"[white on red]ERROR:[/] [white on blue]{e}[/]")
-
-    return "UNKNOWN VERSION"
-    
 if __name__ == "__main__":
     try:
         main()
