@@ -29,7 +29,7 @@ except:
     except ImportError:
         from custom_logging import get_logger
         
-    logger = get_logger('gitdate', level=logging.INFO)
+    logger = get_logger('pypi_info', level=logging.INFO)
 
 import argparse
 import json
