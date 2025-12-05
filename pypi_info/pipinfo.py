@@ -6,6 +6,30 @@
 PyPI Package Information Tool
 A beautiful command-line tool to fetch and display PyPI package information.
 """
+try:
+    from richcolorlog import setup_logging
+    logger = setup_logging(exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5'])
+except:
+    import logging
+
+    logging.getLogger('pika').setLevel(logging.CRITICAL)
+    logging.getLogger('urllib').setLevel(logging.CRITICAL)
+    logging.getLogger('urllib2').setLevel(logging.CRITICAL)
+    logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+    logging.getLogger('markdown_it').setLevel(logging.CRITICAL)
+    logging.getLogger('markdown').setLevel(logging.CRITICAL)
+    logging.getLogger('subprocess').setLevel(logging.CRITICAL)
+    logging.getLogger('pillow').setLevel(logging.CRITICAL)
+    logging.getLogger('pil').setLevel(logging.CRITICAL)
+    logging.getLogger('requests').setLevel(logging.CRITICAL)
+    logging.getLogger('pyqt5').setLevel(logging.CRITICAL)
+    
+    try:
+        from .custom_logging import get_logger
+    except ImportError:
+        from custom_logging import get_logger
+        
+    logger = get_logger('gitdate', level=logging.INFO)
 
 import argparse
 import json
@@ -873,17 +897,22 @@ class PackageInfoDisplay:
         stats_table.add_row("📁 Total Files", str(total_files))
         stats_table.add_row("💾 Total Size", self.format_size(total_size))
         
-    def display_requirements(self, info: Dict[str, Any], package_name: str):
+    def display_requirements(self, info: Dict[str, Any], package_name: str, export: bool = False, export_name: str|None = None):
         try:
             """Display package requirements in a beautiful format."""
             requires_dist = info.get('requires_dist', [])
             requires_python = info.get('requires_python', None)
-            
+
             # Create main requirements panel
             if not requires_dist and not requires_python:
                 self.console.print(f"[yellow]📋 No dependencies found for {package_name}[/yellow]")
                 return
             
+            if export:
+                with open(os.path.join(os.getcwd(), export_name or 'requirements.txt'), 'w') as f_req:
+                    f_req.write("\n".join(requires_dist))
+                    self.console.print(f"✅ [bold #FFFF00]success export requirements to[/] [bold #00FFFF]{f_req.name}[/]")
+
             # Header
             title_text = Text()
             title_text.append("📋 ", style="bold blue")
@@ -1021,7 +1050,6 @@ class PackageInfoDisplay:
             "raw": req
         }
 
-
 def get_version():
     """
     Get the version of the ddf module.
@@ -1046,19 +1074,18 @@ def get_version():
 
     return "UNKNOWN VERSION"
     
-
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
         description="🐍 PyPI Package Information Tool - Get detailed info about Python packages",
         formatter_class=CustomRichHelpFormatter,
-        prog="pypi-info"
+        prog="pipinfo/pypi-info/pip-info/pypi-info"
     )
     
     parser.add_argument(
         'package',
-        nargs='?',
-        help='📦 Package name or search query'
+        nargs='*',
+        help='📦 Packages name or search query'
     )
     
     parser.add_argument(
@@ -1121,6 +1148,17 @@ def main():
     )
 
     parser.add_argument(
+        '-e', '--export',
+        action='store_true',
+        help='💢 Export requirements/description to txt/md file'
+    )
+
+    parser.add_argument(
+        '-E', '--export-name',
+        help='🐜 Export name / Save as name'
+    )
+
+    parser.add_argument(
         '-g', '--gui',
         action='store_true',
         help='🖥️  Launch GUI (if available)'
@@ -1141,7 +1179,7 @@ def main():
         parser.print_help()
         return
     if args.gui:
-        gui(args.package)
+        gui(args.package[0])
         sys.exit(0)
     # Initialize client and display
     client = PyPIClient()
@@ -1149,97 +1187,103 @@ def main():
     
     # Handle search-only mode
     if args.search_only:
-        console.print(f"\n[bold blue]🔍 Searching PyPI for '{args.package}'...[/bold blue]")
-        search_results = client.search_packages(args.package, max_results=50)
+        for i, pack in enumerate(args.package):
+            console.print(f"\n[bold blue]🔍 Searching PyPI for '{pack}'...[/bold blue]")
+            search_results = client.search_packages(pack, max_results=50)
+            
+            if not search_results:
+                console.print(f"[red]❌ No packages found matching '{pack}'[/red]")
+                return
+            
+            # Display search results
+            table = Table(title=f"🔍 Search Results for '{pack}'")
+            table.add_column("Package Name", style="bold green", width=30)
+            table.add_column("Version", style="bold yellow", width=12)
+            table.add_column("Description", style="white")
+            
+            for result in search_results:
+                desc = result.summary
+                if len(desc) > 100:
+                    desc = desc[:97] + "..."
+                
+                table.add_row(result.name, result.version, desc)
+            
+            console.print(table)
+            if i == len(args.package) - 1:
+                return
+    
+    for i, pack in enumerate(args.package):
+        # Find the package (with smart search)
+        console.print(f"\n[bold blue]🔍 Looking for package '{pack}'...[/bold blue]")
+        package_name = client.find_package(pack)
         
-        if not search_results:
-            console.print(f"[red]❌ No packages found matching '{args.package}'[/red]")
+        # if i == len(args.package) - 1: return
+
+        # Get detailed package information
+        package_data = client.get_package_info(package_name)
+        
+        if not package_data:
+            console.print(f"[red]❌ Could not fetch details for package '{package_name}'[/red]")
+            # return
+        
+        info = package_data.get('info', {})
+    
+        # Handle specific info requests
+        if args.author:
+            author = info.get('author', 'N/A')
+            author_email = info.get('author_email', 'N/A')
+            console.print(f"[bold yellow]👤 Author:[/bold yellow] {author}")
+            if author_email != 'N/A':
+                console.print(f"[bold yellow]📧 Email:[/bold yellow] {author_email}")
+            if i == len(args.package) - 1: return
+        
+        if args.home:
+            home_page = info.get('home_page') or info.get('project_urls', {}).get('Homepage', 'N/A')
+            console.print(f"[bold yellow]🏠 Home Page:[/bold yellow] {home_page}")
+            if i == len(args.package) - 1: return
+        
+        if args.tags:
+            classifiers = info.get('classifiers', [])
+            if classifiers:
+                console.print("[bold yellow]🏷️  Package Tags/Classifiers:[/bold yellow]")
+                for classifier in classifiers:
+                    console.print(f"  • {classifier}")
+            else:
+                console.print("[yellow]No classifiers found[/yellow]")
+            if i == len(args.package) - 1: return
+        
+        if args.urls:
+            project_urls = info.get('project_urls', {})
+            if project_urls:
+                console.print("[bold yellow]🔗 Project URLs:[/bold yellow]")
+                for url_type, url in project_urls.items():
+                    console.print(f"  🌐 [cyan]{url_type}:[/cyan] {url}")
+            else:
+                console.print("[yellow]No project URLs found[/yellow]")
             return
         
-        # Display search results
-        table = Table(title=f"🔍 Search Results for '{args.package}'")
-        table.add_column("Package Name", style="bold green", width=30)
-        table.add_column("Version", style="bold yellow", width=12)
-        table.add_column("Description", style="white")
+        if args.requirements:
+            # jprint(info)
+            display.display_requirements(info, package_name, args.export, args.export_name)
+            if i == len(args.package) - 1: return
         
-        for result in search_results:
-            desc = result.summary
-            if len(desc) > 100:
-                desc = desc[:97] + "..."
-            
-            table.add_row(result.name, result.version, desc)
+        # Download package if requested
+        if args.download:
+            version = args.version_download or "latest"
+            console.print(f"\n[bold green]📥 Downloading {package_name} (version: {version})...[/bold green]")
+            success = client.download_package(package_name, version, args.path)
+            if not success:
+                console.print(f"\n:cross_mark: [white on red]Failed to download '{package_name}'[/]")
+                # return
+            console.print()
+            if i == len(args.package) - 1: return
         
-        console.print(table)
-        return
-    
-    # Find the package (with smart search)
-    console.print(f"\n[bold blue]🔍 Looking for package '{args.package}'...[/bold blue]")
-    package_name = client.find_package(args.package)
-    
-    if not package_name:
-        return
-    # Get detailed package information
-    package_data = client.get_package_info(package_name)
-    
-    if not package_data:
-        console.print(f"[red]❌ Could not fetch details for package '{package_name}'[/red]")
-        return
-    
-    info = package_data.get('info', {})
-    
-    # Handle specific info requests
-    if args.author:
-        author = info.get('author', 'N/A')
-        author_email = info.get('author_email', 'N/A')
-        console.print(f"[bold yellow]👤 Author:[/bold yellow] {author}")
-        if author_email != 'N/A':
-            console.print(f"[bold yellow]📧 Email:[/bold yellow] {author_email}")
-        return
-    
-    if args.home:
-        home_page = info.get('home_page') or info.get('project_urls', {}).get('Homepage', 'N/A')
-        console.print(f"[bold yellow]🏠 Home Page:[/bold yellow] {home_page}")
-        return
-    
-    if args.tags:
-        classifiers = info.get('classifiers', [])
-        if classifiers:
-            console.print("[bold yellow]🏷️  Package Tags/Classifiers:[/bold yellow]")
-            for classifier in classifiers:
-                console.print(f"  • {classifier}")
-        else:
-            console.print("[yellow]No classifiers found[/yellow]")
-        return
-    
-    if args.urls:
-        project_urls = info.get('project_urls', {})
-        if project_urls:
-            console.print("[bold yellow]🔗 Project URLs:[/bold yellow]")
-            for url_type, url in project_urls.items():
-                console.print(f"  🌐 [cyan]{url_type}:[/cyan] {url}")
-        else:
-            console.print("[yellow]No project URLs found[/yellow]")
-        return
-    
-    if args.requirements:
-        # jprint(info)
-        display.display_requirements(info, package_name)
-        return
-    
-    # Download package if requested
-    if args.download:
-        version = args.version_download or "latest"
-        console.print(f"\n[bold green]📥 Downloading {package_name} (version: {version})...[/bold green]")
-        success = client.download_package(package_name, version, args.path)
-        if not success:
-            console.print(f"\n:cross_mark: [white on red]Failed to download '{package_name}'[/]")
-            # return
-        console.print()
-        return
-    
-    # Display package information
-    display.display_package_info(package_data, args.last, args.full)
-    
+        # Display package information
+        if not args.requirements and not args.download and not args.author and not args.home and not args.urls:
+            display.display_package_info(package_data, args.last, args.full)
+
+        print("="*os.get_terminal_size()[0])
+        
     # Final message
     console.print(f"[dim]💡 Use --download to download this package, or --help for more options[/dim]")
 
@@ -1267,7 +1311,6 @@ def get_version():
 
     return "UNKNOWN VERSION"
     
-
 if __name__ == "__main__":
     try:
         main()

@@ -40,6 +40,8 @@ setup(
             'pipinfo = pypi_info.pipinfo:main',
             'pypi-info = pypi_info.pipinfo:main',
             'pypi_info = pypi_info.pipinfo:main',
+            'pypiinfo = pypi_info.pipinfo:main',
+            'pypinfo = pypi_info.pipinfo:main',
         ],
     },
     author="Hadi Cahyadi",
