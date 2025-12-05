@@ -20,7 +20,20 @@ def get_version():
 def requirements():
     try:
         with open('requirements.txt', 'r') as f:
-            return [line.strip() for line in f if line.strip()]
+            reqs = []
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("git+"):
+                    if "#egg=" in line:
+                        url, egg = line.split("#egg=", 1)
+                        reqs.append(f"{egg} @ {url}")
+                    else:
+                        reqs.append(line)
+                else:
+                    reqs.append(line)
+            return reqs
     except Exception as e:
         print(f"Error reading requirements: {e}")
     return []
