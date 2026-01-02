@@ -1562,9 +1562,11 @@ def main():
     if not args.package:
         parser.print_help()
         return
-    if args.gui:
+    if args.gui and HAS_GUI:
         gui(args.package[0])
         sys.exit(0)
+    elif args.gui and not HAS_GUI:
+        console.print("[red]❌ GUI dependencies not installed. Please install 'pyqt5' and 'pygments' to use the GUI mode.[/red]")
     # Initialize client and display
     client = PyPIClient()
     display = PackageInfoDisplay()

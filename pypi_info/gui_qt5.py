@@ -27,7 +27,7 @@ from datetime import datetime
 import requests
 import re
 try:
-    from pydebugger.debug import debug
+    from pydebugger.debug import debug  # type: ignore
 except:
     def debug(*args, **kwargs):
         pass
