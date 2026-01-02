@@ -12,7 +12,7 @@ try:
 	from .gui_qt5 import AndromedaStyle, HtmlLoaderThread, HtmlLoadWorker, LoadingOverlay, HtmlViewer, SearchLineEdit, PackageInfoWorker, PyPIInfoGUI  # type: ignore 
 	__all__.extend(["AndromedaStyle", "HtmlLoaderThread", "HtmlLoadWorker", "LoadingOverlay", "HtmlViewer", "SearchLineEdit", "PackageInfoWorker", "PyPIInfoGUI"])
 except Exception as e:
-	print("GUI components could not be imported [__init__]:", e)
+	print(f"GUI components could not be imported [__init__]: {e}: Please install PyQt5 and Pygments for GUI support.")
 
 from .pipinfo import PyPIClient, PackageInfoDisplay, get_version
 

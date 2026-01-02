@@ -147,9 +147,12 @@ try:
     from .gui_qt5 import main as gui
     HAS_GUI = True
 except Exception as e:
-    print(f"GUI components could not be imported: {e}")
-    from gui_qt5 import main as gui
-    HAS_GUI = True
+    print(f"GUI components could not be imported: {e}: Please install PyQt5 and Pygments for GUI support.")
+    try:
+        from gui_qt5 import main as gui
+        HAS_GUI = True
+    except:
+        pass
 
 try:
     from rich.console import Console
