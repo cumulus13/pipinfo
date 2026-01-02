@@ -1,3 +1,4 @@
 rich
 rich_argparse
 # git+https://github.com/cumulus13/jsoncolor@master#egg=jsoncolor
+envdot

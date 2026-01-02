@@ -6,39 +6,139 @@
 PyPI Package Information Tool
 A beautiful command-line tool to fetch and display PyPI package information.
 """
+import os
+import sys
+from pathlib import Path
+import traceback
+
+tprint = None  # type: ignore
+exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5']
+
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+
+if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
+    print("🐞 Debug mode enabled")
+    os.environ["DEBUG"] = "1"
+    os.environ['LOGGING'] = "1"
+    os.environ.pop('NO_LOGGING', None)
+    os.environ['TRACEBACK'] = "1"
+    os.environ["LOGGING"] = "1"
+else:
+    os.environ['NO_LOGGING'] = "1"
+
 try:
-    from richcolorlog import setup_logging
-    logger = setup_logging(exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5'])
+    from richcolorlog import setup_logging, print_exception as tprint  # type: ignore
+    logger = setup_logging(
+        name="pypi_info",
+        level=LOG_LEVEL,
+        exceptions=exceptions
+    )
+    HAS_RICHCOLORLOG=True
 except:
+    HAS_RICHCOLORLOG=False
     import logging
 
-    logging.getLogger('pika').setLevel(logging.CRITICAL)
-    logging.getLogger('urllib').setLevel(logging.CRITICAL)
-    logging.getLogger('urllib2').setLevel(logging.CRITICAL)
-    logging.getLogger('urllib3').setLevel(logging.CRITICAL)
-    logging.getLogger('markdown_it').setLevel(logging.CRITICAL)
-    logging.getLogger('markdown').setLevel(logging.CRITICAL)
-    logging.getLogger('subprocess').setLevel(logging.CRITICAL)
-    logging.getLogger('pillow').setLevel(logging.CRITICAL)
-    logging.getLogger('pil').setLevel(logging.CRITICAL)
-    logging.getLogger('requests').setLevel(logging.CRITICAL)
-    logging.getLogger('pyqt5').setLevel(logging.CRITICAL)
+    for exc in exceptions:
+        logging.getLogger(exc).setLevel(logging.CRITICAL)
     
     try:
-        from .custom_logging import get_logger
+        from .custom_logging import get_logger  # type: ignore
     except ImportError:
-        from custom_logging import get_logger
-        
-    logger = get_logger('pypi_info', level=logging.INFO)
+        from custom_logging import get_logger  # type: ignore
+    
+    logger = get_logger('pypi_info', level=getattr(logging, LOG_LEVEL, logging.INFO))
 
+if not tprint:  # type: ignore
+    def tprint(*args, **kwargs):
+        traceback.print_exc()
+
+def get_config_file():
+    config_file = None
+    if sys.platform == 'win32':
+        config_file_list = [
+            Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / Path('.env'),
+            Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / Path('.env'),
+
+            Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.ini",
+            Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / f"{Path(__file__).stem}.ini",
+
+            Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.toml",
+            Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / f"{Path(__file__).stem}.toml",
+
+            Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.json",
+            Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / f"{Path(__file__).stem}.json",
+
+            Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
+            Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
+
+        ]
+    else:    
+        config_file_list = [
+            Path(os.path.expanduser('~')) / '.pypi_info' / Path('.env'),
+            Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / Path('.env'),
+            Path(os.path.expanduser('~')) / '.config' / Path('.env'),
+
+            Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.ini",
+            Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / f"{Path(__file__).stem}.ini",
+            Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.ini",
+            
+            Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.toml",
+            Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / f"{Path(__file__).stem}.toml",
+            Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.toml",
+            
+            Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.json",
+            Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / f"{Path(__file__).stem}.json",
+            Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.json",
+            
+            Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
+            Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / f"{Path(__file__).stem}.yml",
+            Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
+            
+            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path('.env')}" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path('.env')}",
+            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path('.env')}" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path('.env')}",
+            # Path.cwd() / f"{Path('.env')}",
+            # Path(__file__).parent / f"{Path('.env')}",
+
+            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.ini" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.ini",
+            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.ini" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.ini",
+            # Path.cwd() / f"{Path(__file__).stem}.ini",
+            # Path(__file__).parent / f"{Path(__file__).stem}.ini",
+
+            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.toml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.toml",
+            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.toml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.toml",
+            # Path.cwd() / f"{Path(__file__).stem}.toml",
+            # Path(__file__).parent / f"{Path(__file__).stem}.toml",
+
+            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.json" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.json",
+            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.json" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.json",
+            # Path.cwd() / f"{Path(__file__).stem}.json",
+            # Path(__file__).parent / f"{Path(__file__).stem}.json",
+
+            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.yml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
+            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.yml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
+            # Path.cwd() / f"{Path(__file__).stem}.yml",
+            # Path(__file__).parent / f"{Path(__file__).stem}.yml",
+        ]
+    for cf in config_file_list:
+        if cf.is_file():
+            config_file = cf
+            break
+        
+    if config_file and not config_file.parent.is_dir():
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+
+    config_file = config_file or Path(__file__).parent / Path('.env')
+
+    return config_file
+
+from envdot import load_env  # type: ignore
+load_env(get_config_file())
 import argparse
 import json
 #from jsoncolor import jprint
-import os
-import sys
 import urllib.request
 import urllib.parse
-from pathlib import Path
+
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
@@ -69,6 +169,18 @@ except ImportError:
     print("Install with: pip install rich rich-argparse")
     sys.exit(1)
 
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    redis = None
+
+from dataclasses import dataclass
+import hashlib
+import pickle
+import time
+
 console = Console()
 
 class CustomRichHelpFormatter(RichHelpFormatter):
@@ -84,9 +196,206 @@ class CustomRichHelpFormatter(RichHelpFormatter):
             "argparse.prog": "bold #00AAFF italic", # Blue italic
             "argparse.default": "bold",       # Bold
         }
-    except Exceptions as e:
-        styles = {}
+    except Exceptions as e:  # type: ignore
+        styles = {}  # type: ignore
 
+@dataclass
+class ConfigManager:
+    CACHE_DIR: Path = Path(os.getenv("CACHE_DIR", Path.home() / ".pypi_info" / "cache"))
+    CACHE_EXPIRY: int = os.getenv("CACHE_EXPIRY", 3600)  # type: ignore
+    REDIS_PREFIX: str = os.getenv("REDIS_PREFIX", "pipr_cache:")
+    use_cache: bool = os.getenv("USE_CACHE", True)  # type: ignore
+    use_redis: bool = os.getenv("USE_REDIS", True)  # type: ignore
+    redis_client: Optional[Any] = None  # type: ignore
+
+Config = ConfigManager()
+
+class RedisManager:    
+    
+    def __init__(self) -> None:
+        """Initialize Redis connection"""
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available, falling back to file cache")
+            Config.use_redis = False
+            return
+        
+        try:
+            redis_config = self.get_redis_config()
+            logger.debug(f"Connecting to Redis: {redis_config.get('host')}:{redis_config.get('port')}/{redis_config.get('db')}")
+            
+            Config.redis_client = redis.Redis(  # type: ignore
+                decode_responses=True,  # Get strings instead of bytes
+                **redis_config
+            )
+            
+            # Test connection
+            Config.redis_client.ping()
+            logger.info(f"Redis connected: {redis_config.get('host')}:{redis_config.get('port')}/{redis_config.get('db')}")
+            
+        except redis.ConnectionError as e:  # type: ignore
+            logger.warning(f"Redis connection failed: {e}, falling back to file cache")
+            logger.exception(e)  # type: ignore
+            Config.redis_client = None
+            Config.use_redis = False
+        except Exception as e:
+            logger.warning(f"Redis initialization failed: {e}, falling back to file cache")
+            logger.exception(e)  # type: ignore
+            Config.redis_client = None
+            Config.use_redis = False
+
+    def get_redis_config(self) -> Dict[str, Any]:
+        """Get Redis configuration from config file or environment"""
+        config = {
+            'host': os.getenv('PYPI_INFO_REDIS_HOST', '127.0.0.1'),
+            'port': int(os.getenv('PYPI_INFO_REDIS_PORT', '6379')),
+            'db': int(os.getenv('PYPI_INFO_REDIS_DB', '0')),
+            'password': os.getenv('PYPI_INFO_REDIS_PASSWORD', ''),
+            'socket_timeout': int(os.getenv('PYPI_INFO_REDIS_TIMEOUT', '5')),
+            'socket_connect_timeout': int(os.getenv('PYPI_INFO_REDIS_CONNECT_TIMEOUT', '5')),
+        }
+        
+        # Parse Redis URL if provided (redis://user:pass@host:port/db)
+        redis_url = os.getenv('PYPI_INFO_REDIS_URL', '')
+        if redis_url:
+            try:
+                # Parse redis://[password@]host:port/db
+                import re
+                pattern = r'redis://(?:([^@]+)@)?([^:]+):(\d+)/(\d+)'
+                match = re.match(pattern, redis_url)
+                if match:
+                    password, host, port, db = match.groups()
+                    config['host'] = host
+                    config['port'] = int(port)
+                    config['db'] = int(db)
+                    if password:
+                        config['password'] = password
+                    logger.debug(f"Parsed Redis URL: {host}:{port}/{db}")
+            except Exception as e:
+                logger.warning(f"Failed to parse Redis URL: {e}")
+        
+        # Remove empty password
+        if not config['password']:
+            config.pop('password', None)
+        
+        return config
+
+    def _get_redis_key(self, cache_key: str) -> str:
+        """Get Redis key with prefix"""
+        return f"{Config.REDIS_PREFIX}{cache_key}"
+
+    def _get_from_redis(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Retrieve data from Redis cache"""
+        logger.alert(f"Config.use_redis: {Config.use_redis}")
+        logger.alert(f"Config.redis_client: {Config.redis_client}")
+
+        if not Config.use_redis or not Config.redis_client:
+            return None
+        
+        redis_key = None
+
+        try:
+            redis_key = self._get_redis_key(cache_key)
+            data_str = Config.redis_client.get(redis_key)
+            
+            if data_str:
+                data = json.loads(data_str)  # type: ignore
+                logger.debug(f"Redis cache hit: {cache_key}")
+                return data
+            
+            logger.debug(f"Redis cache miss: {cache_key}")
+            return None
+            
+        except redis.RedisError as e:  # type: ignore
+            logger.exception(f"Redis get error: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.exception(f"Redis data decode error: {e}")
+            # Remove corrupted data
+            try:
+                if redis_key: Config.redis_client.delete(redis_key)  # type: ignore
+            except:
+                pass
+            return None
+        except Exception as e:
+            logger.exception(f"Redis error: {e}")
+            return None
+
+    def _save_to_redis(self, cache_key: str, data: Dict[str, Any]) -> None:
+        """Save data to Redis cache"""
+        if not Config.use_redis or not Config.redis_client:
+            return
+        
+        try:
+            redis_key = self._get_redis_key(cache_key)
+            data_str = json.dumps(data)
+            
+            # Set with expiration
+            Config.redis_client.setex(
+                redis_key,
+                Config.CACHE_EXPIRY,
+                data_str
+            )
+            logger.debug(f"Redis cached: {cache_key} (TTL: {Config.CACHE_EXPIRY}s)")
+            
+        except redis.RedisError as e:  # type: ignore
+            logger.warning(f"Redis set error: {e}")
+        except Exception as e:
+            logger.warning(f"Redis save error: {e}")
+
+class CacheManager:
+
+    def _get_cache_path(self, cache_key: str) -> Path:
+        """Get cache file path for a given key"""
+        # Use hash to avoid filesystem issues with special characters
+        key_hash = hashlib.md5(cache_key.encode()).hexdigest()
+        return Config.CACHE_DIR / f"{key_hash}.cache"
+
+    def _get_from_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Retrieve data from file cache if valid"""
+        if not Config.use_cache:
+            return None
+        
+        cache_path = self._get_cache_path(cache_key)
+        
+        if not cache_path.exists():
+            return None
+        
+        try:
+            # Check if cache is expired
+            cache_age = time.time() - cache_path.stat().st_mtime
+            if cache_age > Config.CACHE_EXPIRY:
+                logger.debug(f"File cache expired for: {cache_key}")
+                cache_path.unlink()
+                return None
+            
+            # Load from cache
+            with open(cache_path, 'rb') as f:
+                data = pickle.load(f)
+            
+            logger.debug(f"File cache hit for: {cache_key} (age: {cache_age:.1f}s)")
+            return data
+            
+        except Exception as e:
+            logger.warning(f"File cache read error: {e}")
+            # Remove corrupted cache
+            if cache_path.exists():
+                cache_path.unlink()
+            return None
+
+    def _save_to_cache(self, cache_key: str, data: Dict[str, Any]) -> None:
+        """Save data to file cache"""
+        if not Config.use_cache:
+            return
+        
+        cache_path = self._get_cache_path(cache_key)
+        
+        try:
+            with open(cache_path, 'wb') as f:
+                pickle.dump(data, f)
+            logger.debug(f"File cached: {cache_key}")
+        except Exception as e:
+            logger.warning(f"File cache write error: {e}")
+    
 class PyPISearchResult:
     """Represents a search result from PyPI."""
     
@@ -105,11 +414,14 @@ class PyPIClient:
         self.session_headers = {
             'User-Agent': 'PyPI-Info-Tool/1.0 (https://github.com/user/pypi-info-tool)'
         }
+
+        self.redis_manager = RedisManager()
+        self.cache_manager = CacheManager()
     
     def search_packages(self, query: str, max_results: int = 20) -> List[PyPISearchResult]:
         """Search for packages using multiple approaches."""
         results = []
-        
+
         # Try multiple search strategies
         try:
             # Strategy 1: Try PyPI.org search API (JSON endpoint)
@@ -134,25 +446,58 @@ class PyPIClient:
     
     def _search_pypi_json_api(self, query: str, max_results: int) -> List[PyPISearchResult]:
         """Search using PyPI's JSON API approach."""
-        try:
-            # Use PyPI's search endpoint
-            search_url = f"https://pypi.org/search/?q={urllib.parse.quote(query)}&o=&c="
-            
-            with console.status(f"[bold blue]🔍 Searching PyPI for '{query}'...", spinner="dots"):
-                req = urllib.request.Request(search_url, headers=self.session_headers)
-                with urllib.request.urlopen(req, timeout=15) as response:
-                    if response.status == 200:
-                        html_content = response.read().decode('utf-8')
-                        return self._parse_modern_search_results(html_content, query, max_results)
-        except Exception as e:
-            pass
-        return []
+
+        package_name = re.sub(r'\s+', '_', query.strip().lower())
+        cache_key = f"package_search:{package_name}"
+        logger.info(f"cache_key: {cache_key}")
+        logger.info(f"Config.use_redis: {Config.use_redis}")
+
+        html_content = ""
+
+        # Try Redis cache first (faster)
+        if cache_key and Config.use_redis:
+            cached_data = self.redis_manager._get_from_redis(cache_key)
+            logger.emergency(f"cached_data: {cached_data}")  # type: ignore
+            if cached_data:
+                html_content = cached_data.get("data")
+        
+        # Try file cache second
+        elif cache_key and Config.use_cache:
+            cached_data = self.cache_manager._get_from_cache(cache_key)
+            logger.fatal(f"cached_data: {cached_data}")
+            if cached_data:
+                # Promote to Redis cache for next time
+                if Config.use_redis:
+                    redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
+                html_content = cached_data.get("data")
+        else:
+            try:
+                # Use PyPI's search endpoint
+                search_url = f"https://pypi.org/search/?q={urllib.parse.quote(query)}&o=&c="
+                
+                with console.status(f"[bold blue]🔍 Searching PyPI for '{query}'...", spinner="dots"):
+                    req = urllib.request.Request(search_url, headers=self.session_headers)
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        if response.status == 200:
+                            html_content = response.read().decode('utf-8')
+                            
+            except Exception as e:
+                pass
+
+        if cache_key and html_content:  # type: ignore
+            # Save empty result to caches to avoid repeated failed searches
+            if Config.use_cache:
+                self.cache_manager._save_to_cache(cache_key, {"data": html_content})  # type: ignore
+            if Config.use_redis:
+                self.redis_manager._save_to_redis(cache_key, {"data": html_content})  # type: ignore
+        
+        return self._parse_modern_search_results(html_content, query, max_results)  # type: ignore
     
     def _search_pypi_warehouse(self, query: str, max_results: int) -> List[PyPISearchResult]:
         """Alternative search using warehouse data."""
         try:
             # Try a different search approach
-            search_terms = query.lower().split()
+            # search_terms = query.lower().split()
             results = []
             
             # Use a simpler approach - try common package patterns
@@ -282,6 +627,8 @@ class PyPIClient:
             r'href="/project/([^/]+)/"[^>]*>.*?>([^<]+)<.*?description[^>]*>([^<]*)<.*?version[^>]*>([^<]+)<',
         ]
         
+        matches = None
+
         for pattern in patterns:
             try:
                 matches = re.findall(pattern, html_content, re.DOTALL | re.IGNORECASE)
@@ -290,7 +637,7 @@ class PyPIClient:
             except:
                 continue
         
-        if not matches:
+        if not matches:  # type: ignore
             # Fallback: try to find any project links
             project_links = re.findall(r'href="/project/([^/]+)/"', html_content)
             if project_links:
@@ -310,7 +657,7 @@ class PyPIClient:
                 return results
         
         # Process matches
-        for match in matches[:max_results]:
+        for match in matches[:max_results]:  # type: ignore
             if len(match) >= 4:
                 project_name, display_name, description, version = match[:4]
                 name = project_name.strip()
@@ -347,15 +694,41 @@ class PyPIClient:
         """Fetch package information from PyPI API."""
         url = f"{self.BASE_URL}/{package_name}/json"
         
+        cache_key = f"package_info:{package_name}"
+        logger.info(f"cache_key: {cache_key}")
+        logger.info(f"Config.use_redis: {Config.use_redis}")
+
+        # Try Redis cache first (faster)
+        if cache_key and Config.use_redis:
+            cached_data = self.redis_manager._get_from_redis(cache_key)
+            logger.emergency(f"cached_data: {cached_data}")  # type: ignore
+            if cached_data:
+                return cached_data
+        
+        # Try file cache second
+        if cache_key and Config.use_cache:
+            cached_data = self.cache_manager._get_from_cache(cache_key)
+            logger.fatal(f"cached_data: {cached_data}")
+            if cached_data:
+                # Promote to Redis cache for next time
+                if Config.use_redis:
+                    redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
+                return cached_data
+        
         try:
             with console.status(f"[bold blue]🔍 Fetching details for '{package_name}'...", spinner="dots"):
                 req = urllib.request.Request(url, headers=self.session_headers)
                 with urllib.request.urlopen(req, timeout=10) as response:
                     if response.status == 200:
-                        return json.loads(response.read().decode('utf-8'))
+                        data = json.loads(response.read().decode('utf-8'))
+                        if Config.use_redis:
+                            self.redis_manager._save_to_redis(cache_key, data)
+                        if Config.use_cache:
+                            self.cache_manager._save_to_cache(cache_key, data)
+                        return data
                     else:
                         return None
-        except urllib.error.HTTPError as e:
+        except urllib.error.HTTPError as e:  # type: ignore
             if e.code == 404:
                 console.print(f"[red]❌ Package '{package_name}' not found on PyPI[/red]")
             else:
@@ -402,30 +775,30 @@ class PyPIClient:
         # Generate search patterns
         patterns = self._generate_search_patterns(query)
         
-        console.print(f"[blue]🔍 Checking {len(patterns)} possible package names...[/blue]")
+        with console.status(f"[blue]🔍 Checking {len(patterns)} possible package names ...[/blue]", spinner="point"):
         
-        # Try each pattern
-        checked = 0
-        for pattern in patterns:
-            if checked >= 15:  # Limit API calls
-                break
-                
-            try:
-                package_info = self.get_package_info(pattern)
-                if package_info:
-                    info = package_info['info']
-                    name = info.get('name', pattern)
-                    summary = info.get('summary', 'No description available')
-                    version = info.get('version', 'unknown')
+            # Try each pattern
+            checked = 0
+            for pattern in patterns:
+                if checked >= 15:  # Limit API calls
+                    break
                     
-                    # Check if not already in results
-                    if not any(r.name.lower() == name.lower() for r in results):
-                        results.append(PyPISearchResult(name, summary, version))
-                        console.print(f"[dim]  ✓ Found: {name}[/dim]")
-                
-                checked += 1
-            except:
-                continue
+                try:
+                    package_info = self.get_package_info(pattern)
+                    if package_info:
+                        info = package_info['info']
+                        name = info.get('name', pattern)
+                        summary = info.get('summary', 'No description available')
+                        version = info.get('version', 'unknown')
+                        
+                        # Check if not already in results
+                        if not any(r.name.lower() == name.lower() for r in results):
+                            results.append(PyPISearchResult(name, summary, version))
+                            console.print(f"[dim]  ✓ Found: {name}[/dim]")
+                    
+                    checked += 1
+                except:
+                    continue
         
         # Also try fuzzy matching with popular packages
         if not results and len(query) > 2:
@@ -528,7 +901,8 @@ class PyPIClient:
             
             if choice == 0:
                 console.print("[yellow]⚠️  Selection cancelled[/yellow]")
-                return None
+                sys.exit(0)
+                # return None
             
             if 1 <= choice <= len(results):
                 selected_package = results[choice - 1].name
@@ -643,7 +1017,7 @@ class PackageInfoDisplay:
         size_names = ["B", "KB", "MB", "GB"]
         i = 0
         while size_bytes >= 1024 and i < len(size_names) - 1:
-            size_bytes /= 1024.0
+            size_bytes /= 1024.0  # type: ignore
             i += 1
         
         return f"{size_bytes:.1f} {size_names[i]}"
@@ -971,6 +1345,9 @@ class PackageInfoDisplay:
             'dev': [],
             'test': []
         }
+
+        if not requires_dist:
+            return deps
         
         for req in requires_dist:
             if not req:
@@ -1049,6 +1426,13 @@ class PackageInfoDisplay:
             "marker": marker_part,
             "raw": req
         }
+
+def get_download_path(path = None, package_name = None):
+    path = os.getenv('DOWNLOAD_PATH', path or os.getcwd())
+    if package_name:
+        path = os.path.join(path, package_name)
+        os.makedirs(path, exist_ok=True)
+    return path
 
 def get_version():
     """
@@ -1264,14 +1648,14 @@ def main():
         
         if args.requirements:
             # jprint(info)
-            display.display_requirements(info, package_name, args.export, args.export_name)
+            display.display_requirements(info, package_name, args.export, args.export_name)  # type: ignore
             if i == len(args.package) - 1: return
         
         # Download package if requested
         if args.download:
             version = args.version_download or "latest"
             console.print(f"\n[bold green]📥 Downloading {package_name} (version: {version})...[/bold green]")
-            success = client.download_package(package_name, version, args.path)
+            success = client.download_package(package_name, version, get_download_path(args.path, package_name if os.getenv('DOWNLOAD_IN_SUBFOLDER', '1') in ['1', 'true', 'True'] else None))  # type: ignore
             if not success:
                 console.print(f"\n:cross_mark: [white on red]Failed to download '{package_name}'[/]")
                 # return
@@ -1280,7 +1664,7 @@ def main():
         
         # Display package information
         if not args.requirements and not args.download and not args.author and not args.home and not args.urls:
-            display.display_package_info(package_data, args.last, args.full)
+            display.display_package_info(package_data, args.last, args.full)  # type: ignore
 
         print("="*os.get_terminal_size()[0])
         

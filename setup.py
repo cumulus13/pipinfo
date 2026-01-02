@@ -48,6 +48,20 @@ setup(
     #     'pipinfo': ['batmaker.ini'],
     # },
     install_requires=requirements(),
+    extra_require={
+        'dev': [
+            'pytest',
+            'pytest-cov',
+            'flake8',
+            'black',
+            'twine',
+            'pydebugger'
+        ],
+        'gui': [
+            'PyQt5>=5.15.0',
+            'pygments',
+        ],
+    },
     entry_points={
         'console_scripts': [
             'pipinfo = pypi_info.pipinfo:main',

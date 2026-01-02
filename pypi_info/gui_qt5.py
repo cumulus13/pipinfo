@@ -26,7 +26,11 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import requests
 import re
-from pydebugger.debug import debug
+try:
+    from pydebugger.debug import debug
+except:
+    def debug(*args, **kwargs):
+        pass
 from pygments.formatters import HtmlFormatter
 # Try to import markdown for better rendering
 try:
