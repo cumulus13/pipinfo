@@ -14,7 +14,7 @@ import traceback
 tprint = None  # type: ignore
 exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5']
 
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'CRITICAL')
 
 if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
     print("🐞 Debug mode enabled")
@@ -23,6 +23,7 @@ if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
     os.environ.pop('NO_LOGGING', None)
     os.environ['TRACEBACK'] = "1"
     os.environ["LOGGING"] = "1"
+    LOG_LEVEL = "DEBUG"
 else:
     os.environ['NO_LOGGING'] = "1"
 
@@ -46,7 +47,7 @@ except:
     except ImportError:
         from custom_logging import get_logger  # type: ignore
     
-    logger = get_logger('pypi_info', level=getattr(logging, LOG_LEVEL, logging.INFO))
+    logger = get_logger('pypi_info', level=getattr(logging, LOG_LEVEL, logging.CRITICAL))
 
 if not tprint:  # type: ignore
     def tprint(*args, **kwargs):
