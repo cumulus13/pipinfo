@@ -9,8 +9,8 @@ A beautiful PyQt5 interface to fetch and display PyPI package information.
 
 import sys
 
-from ctraceback import CTraceback
-sys.excepthook = CTraceback()
+# from ctraceback import CTraceback
+# sys.excepthook = CTraceback()
 
 with open("debug.log", "w") as f:
     f.write("Script started!\n")

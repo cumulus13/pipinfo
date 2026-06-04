@@ -12,9 +12,9 @@ from pathlib import Path
 import traceback
 
 tprint = None  # type: ignore
-exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5']
+LOG_LEVEL = "NO"
 
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'CRITICAL')
+exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5']
 
 if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
     print("🐞 Debug mode enabled")
@@ -24,8 +24,13 @@ if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
     os.environ['TRACEBACK'] = "1"
     os.environ["LOGGING"] = "1"
     LOG_LEVEL = "DEBUG"
+    # print(f"LOG_LEVEL            [1]: {LOG_LEVEL}")
+    # print(f"os.getenv('LOGGING') [1]: {os.getenv('LOGGING', '0')}")
 else:
     os.environ['NO_LOGGING'] = "1"
+
+print(f"LOG_LEVEL            [2]: {LOG_LEVEL}")
+# print(f"os.getenv('LOGGING') [2]: {os.getenv('LOGGING', '0')}")
 
 try:
     from richcolorlog import setup_logging, print_exception as tprint  # type: ignore
@@ -35,12 +40,14 @@ try:
         exceptions=exceptions
     )
     HAS_RICHCOLORLOG=True
+    # print(f"LOG_LEVEL            [3]: {LOG_LEVEL}")
+    # print(f"os.getenv('LOGGING') [3]: {os.getenv('LOGGING', '0')}")
 except:
     HAS_RICHCOLORLOG=False
     import logging
 
     for exc in exceptions:
-        logging.getLogger(exc).setLevel(logging.CRITICAL)
+        logging.getLogger(exc).setLevel(0)
     
     try:
         from .custom_logging import get_logger  # type: ignore
@@ -48,6 +55,9 @@ except:
         from custom_logging import get_logger  # type: ignore
     
     logger = get_logger('pypi_info', level=getattr(logging, LOG_LEVEL, logging.CRITICAL))
+
+# print(f"LOG_LEVEL            [4]: {LOG_LEVEL}")
+# print(f"os.getenv('LOGGING') [4]: {os.getenv('LOGGING', '0')}")
 
 if not tprint:  # type: ignore
     def tprint(*args, **kwargs):
@@ -290,6 +300,8 @@ class RedisManager:
 
     def _get_from_redis(self, cache_key: str) -> Optional[Dict[str, Any]]:
         """Retrieve data from Redis cache"""
+        # print(f"LOG_LEVEL            [X]: {LOG_LEVEL}")
+        # print(f"os.getenv('LOGGING') [X]: {os.getenv('LOGGING', '0')}")
         logger.alert(f"Config.use_redis: {Config.use_redis}")
         logger.alert(f"Config.redis_client: {Config.redis_client}")
 
@@ -462,7 +474,7 @@ class PyPIClient:
         # Try Redis cache first (faster)
         if cache_key and Config.use_redis:
             cached_data = self.redis_manager._get_from_redis(cache_key)
-            logger.emergency(f"cached_data: {cached_data}")  # type: ignore
+            logger.alert(f"cached_data: {cached_data}")  # type: ignore
             if cached_data:
                 html_content = cached_data.get("data")
         
@@ -706,7 +718,7 @@ class PyPIClient:
         # Try Redis cache first (faster)
         if cache_key and Config.use_redis:
             cached_data = self.redis_manager._get_from_redis(cache_key)
-            logger.emergency(f"cached_data: {cached_data}")  # type: ignore
+            logger.alert(f"cached_data: {cached_data}")  # type: ignore
             if cached_data:
                 return cached_data
         
