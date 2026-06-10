@@ -24,13 +24,10 @@ if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
     os.environ['TRACEBACK'] = "1"
     os.environ["LOGGING"] = "1"
     LOG_LEVEL = "DEBUG"
-    # print(f"LOG_LEVEL            [1]: {LOG_LEVEL}")
-    # print(f"os.getenv('LOGGING') [1]: {os.getenv('LOGGING', '0')}")
 else:
     os.environ['NO_LOGGING'] = "1"
 
 print(f"LOG_LEVEL            [2]: {LOG_LEVEL}")
-# print(f"os.getenv('LOGGING') [2]: {os.getenv('LOGGING', '0')}")
 
 try:
     from richcolorlog import setup_logging, print_exception as tprint  # type: ignore
@@ -40,8 +37,6 @@ try:
         exceptions=exceptions
     )
     HAS_RICHCOLORLOG=True
-    # print(f"LOG_LEVEL            [3]: {LOG_LEVEL}")
-    # print(f"os.getenv('LOGGING') [3]: {os.getenv('LOGGING', '0')}")
 except:
     HAS_RICHCOLORLOG=False
     import logging
@@ -55,9 +50,6 @@ except:
         from custom_logging import get_logger  # type: ignore
     
     logger = get_logger('pypi_info', level=getattr(logging, LOG_LEVEL, logging.CRITICAL))
-
-# print(f"LOG_LEVEL            [4]: {LOG_LEVEL}")
-# print(f"os.getenv('LOGGING') [4]: {os.getenv('LOGGING', '0')}")
 
 if not tprint:  # type: ignore
     def tprint(*args, **kwargs):
@@ -81,7 +73,6 @@ def get_config_file():
 
             Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
             Path(os.path.expandvars('%USERPROFILE%')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
-
         ]
     else:    
         config_file_list = [
@@ -104,31 +95,6 @@ def get_config_file():
             Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.yml",
             Path(os.path.expanduser('~')) / '.config' / '.pypi_info' / f"{Path(__file__).stem}.yml",
             Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
-            
-            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path('.env')}" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path('.env')}",
-            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path('.env')}" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path('.env')}",
-            # Path.cwd() / f"{Path('.env')}",
-            # Path(__file__).parent / f"{Path('.env')}",
-
-            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.ini" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.ini",
-            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.ini" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.ini",
-            # Path.cwd() / f"{Path(__file__).stem}.ini",
-            # Path(__file__).parent / f"{Path(__file__).stem}.ini",
-
-            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.toml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.toml",
-            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.toml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.toml",
-            # Path.cwd() / f"{Path(__file__).stem}.toml",
-            # Path(__file__).parent / f"{Path(__file__).stem}.toml",
-
-            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.json" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.json",
-            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.json" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.json",
-            # Path.cwd() / f"{Path(__file__).stem}.json",
-            # Path(__file__).parent / f"{Path(__file__).stem}.json",
-
-            # Path(os.path.expanduser('~')) / '.pypi_info' / f"{Path(__file__).stem}.yml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
-            # Path(os.path.expandvars('%APPDATA%')) / '.pypi_info' / f"{Path(__file__).stem}.yml" if sys.platform == 'win32' else Path(os.path.expanduser('~')) / '.config' / f"{Path(__file__).stem}.yml",
-            # Path.cwd() / f"{Path(__file__).stem}.yml",
-            # Path(__file__).parent / f"{Path(__file__).stem}.yml",
         ]
     for cf in config_file_list:
         if cf.is_file():
@@ -146,7 +112,6 @@ from envdot import load_env  # type: ignore
 load_env(get_config_file())
 import argparse
 import json
-#from jsoncolor import jprint
 import urllib.request
 import urllib.parse
 
@@ -211,7 +176,7 @@ class CustomRichHelpFormatter(RichHelpFormatter):
             "argparse.prog": "bold #00AAFF italic", # Blue italic
             "argparse.default": "bold",       # Bold
         }
-    except Exceptions as e:  # type: ignore
+    except Exception as e:  # type: ignore
         styles = {}  # type: ignore
 
 @dataclass
@@ -239,11 +204,10 @@ class RedisManager:
             logger.debug(f"Connecting to Redis: {redis_config.get('host')}:{redis_config.get('port')}/{redis_config.get('db')}")
             
             Config.redis_client = redis.Redis(  # type: ignore
-                decode_responses=True,  # Get strings instead of bytes
+                decode_responses=True,
                 **redis_config
             )
             
-            # Test connection
             Config.redis_client.ping()
             logger.info(f"Redis connected: {redis_config.get('host')}:{redis_config.get('port')}/{redis_config.get('db')}")
             
@@ -269,11 +233,9 @@ class RedisManager:
             'socket_connect_timeout': int(os.getenv('PYPI_INFO_REDIS_CONNECT_TIMEOUT', '5')),
         }
         
-        # Parse Redis URL if provided (redis://user:pass@host:port/db)
         redis_url = os.getenv('PYPI_INFO_REDIS_URL', '')
         if redis_url:
             try:
-                # Parse redis://[password@]host:port/db
                 import re
                 pattern = r'redis://(?:([^@]+)@)?([^:]+):(\d+)/(\d+)'
                 match = re.match(pattern, redis_url)
@@ -288,7 +250,6 @@ class RedisManager:
             except Exception as e:
                 logger.warning(f"Failed to parse Redis URL: {e}")
         
-        # Remove empty password
         if not config['password']:
             config.pop('password', None)
         
@@ -300,8 +261,6 @@ class RedisManager:
 
     def _get_from_redis(self, cache_key: str) -> Optional[Dict[str, Any]]:
         """Retrieve data from Redis cache"""
-        # print(f"LOG_LEVEL            [X]: {LOG_LEVEL}")
-        # print(f"os.getenv('LOGGING') [X]: {os.getenv('LOGGING', '0')}")
         logger.alert(f"Config.use_redis: {Config.use_redis}")
         logger.alert(f"Config.redis_client: {Config.redis_client}")
 
@@ -327,7 +286,6 @@ class RedisManager:
             return None
         except json.JSONDecodeError as e:
             logger.exception(f"Redis data decode error: {e}")
-            # Remove corrupted data
             try:
                 if redis_key: Config.redis_client.delete(redis_key)  # type: ignore
             except:
@@ -346,7 +304,6 @@ class RedisManager:
             redis_key = self._get_redis_key(cache_key)
             data_str = json.dumps(data)
             
-            # Set with expiration
             Config.redis_client.setex(
                 redis_key,
                 Config.CACHE_EXPIRY,
@@ -363,7 +320,6 @@ class CacheManager:
 
     def _get_cache_path(self, cache_key: str) -> Path:
         """Get cache file path for a given key"""
-        # Use hash to avoid filesystem issues with special characters
         key_hash = hashlib.md5(cache_key.encode()).hexdigest()
         return Config.CACHE_DIR / f"{key_hash}.cache"
 
@@ -378,14 +334,12 @@ class CacheManager:
             return None
         
         try:
-            # Check if cache is expired
             cache_age = time.time() - cache_path.stat().st_mtime
             if cache_age > Config.CACHE_EXPIRY:
                 logger.debug(f"File cache expired for: {cache_key}")
                 cache_path.unlink()
                 return None
             
-            # Load from cache
             with open(cache_path, 'rb') as f:
                 data = pickle.load(f)
             
@@ -394,7 +348,6 @@ class CacheManager:
             
         except Exception as e:
             logger.warning(f"File cache read error: {e}")
-            # Remove corrupted cache
             if cache_path.exists():
                 cache_path.unlink()
             return None
@@ -439,19 +392,15 @@ class PyPIClient:
         """Search for packages using multiple approaches."""
         results = []
 
-        # Try multiple search strategies
         try:
-            # Strategy 1: Try PyPI.org search API (JSON endpoint)
             results = self._search_pypi_json_api(query, max_results)
             if results:
                 return results
             
-            # Strategy 2: Try PyPI warehouse search
             results = self._search_pypi_warehouse(query, max_results)
             if results:
                 return results
             
-            # Strategy 3: Try simple.pypi.org listing approach
             results = self._search_simple_pypi(query, max_results)
             if results:
                 return results
@@ -471,25 +420,21 @@ class PyPIClient:
 
         html_content = ""
 
-        # Try Redis cache first (faster)
         if cache_key and Config.use_redis:
             cached_data = self.redis_manager._get_from_redis(cache_key)
             logger.alert(f"cached_data: {cached_data}")  # type: ignore
             if cached_data:
                 html_content = cached_data.get("data")
         
-        # Try file cache second
         elif cache_key and Config.use_cache:
             cached_data = self.cache_manager._get_from_cache(cache_key)
             logger.fatal(f"cached_data: {cached_data}")
             if cached_data:
-                # Promote to Redis cache for next time
                 if Config.use_redis:
                     redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
                 html_content = cached_data.get("data")
         else:
             try:
-                # Use PyPI's search endpoint
                 search_url = f"https://pypi.org/search/?q={urllib.parse.quote(query)}&o=&c="
                 
                 with console.status(f"[bold blue]🔍 Searching PyPI for '{query}'...", spinner="dots"):
@@ -502,7 +447,6 @@ class PyPIClient:
                 pass
 
         if cache_key and html_content:  # type: ignore
-            # Save empty result to caches to avoid repeated failed searches
             if Config.use_cache:
                 self.cache_manager._save_to_cache(cache_key, {"data": html_content})  # type: ignore
             if Config.use_redis:
@@ -513,11 +457,8 @@ class PyPIClient:
     def _search_pypi_warehouse(self, query: str, max_results: int) -> List[PyPISearchResult]:
         """Alternative search using warehouse data."""
         try:
-            # Try a different search approach
-            # search_terms = query.lower().split()
             results = []
             
-            # Use a simpler approach - try common package patterns
             common_patterns = [
                 query,
                 f"python-{query}",
@@ -549,13 +490,11 @@ class PyPIClient:
     def _search_simple_pypi(self, query: str, max_results: int) -> List[PyPISearchResult]:
         """Search using a pattern matching approach."""
         try:
-            # This is a fallback approach - try to find packages by pattern matching
-            # Generate possible package names based on the query
             query_patterns = self._generate_search_patterns(query)
             results = []
             
             with console.status(f"[bold blue]🔍 Trying pattern matching for '{query}'...", spinner="dots"):
-                for pattern in query_patterns[:10]:  # Limit attempts
+                for pattern in query_patterns[:10]:
                     try:
                         package_info = self.get_package_info(pattern)
                         if package_info:
@@ -565,7 +504,6 @@ class PyPIClient:
                                 info.get('summary', 'No description available'),
                                 info.get('version', 'unknown')
                             )
-                            # Check if not already in results
                             if not any(r.name.lower() == result.name.lower() for r in results):
                                 results.append(result)
                                 if len(results) >= max_results:
@@ -583,10 +521,8 @@ class PyPIClient:
         patterns = []
         query_lower = query.lower()
         
-        # Original query
         patterns.append(query_lower)
         
-        # Common Python package patterns
         patterns.extend([
             f"python-{query_lower}",
             f"{query_lower}-python",
@@ -598,7 +534,6 @@ class PyPIClient:
             f"{query_lower}3",
         ])
         
-        # Handle partial matches for common packages
         common_packages = {
             'reque': ['requests', 'request', 'python-requests'],
             'moviedb': ['tmdbsimple', 'themoviedb', 'movie-db', 'moviedb', 'python-moviedb'],
@@ -614,7 +549,6 @@ class PyPIClient:
         if query_lower in common_packages:
             patterns.extend(common_packages[query_lower])
         
-        # Try substring matching for popular packages
         popular_packages = [
             'requests', 'beautifulsoup4', 'pandas', 'numpy', 'flask', 'django',
             'fastapi', 'sqlalchemy', 'matplotlib', 'seaborn', 'pillow',
@@ -626,21 +560,15 @@ class PyPIClient:
             if query_lower in pkg.lower() or any(word in pkg.lower() for word in query_lower.split()):
                 patterns.append(pkg)
         
-        return list(dict.fromkeys(patterns))  # Remove duplicates while preserving order
+        return list(dict.fromkeys(patterns))
     
     def _parse_modern_search_results(self, html_content: str, query: str, max_results: int) -> List[PyPISearchResult]:
         """Parse modern PyPI search results with multiple patterns."""
         results = []
         
-        # Try multiple parsing patterns for different PyPI layouts
         patterns = [
-            # Pattern 1: Current PyPI layout
             r'<a[^>]*href="/project/([^/]+)/"[^>]*>.*?<span[^>]*class="[^"]*package-snippet__name[^"]*"[^>]*>([^<]+)</span>.*?<p[^>]*class="[^"]*package-snippet__description[^"]*"[^>]*>([^<]*)</p>.*?<span[^>]*class="[^"]*package-snippet__version[^"]*"[^>]*>([^<]+)</span>',
-            
-            # Pattern 2: Alternative layout
             r'<h3[^>]*class="[^"]*package-snippet__title[^"]*"[^>]*>.*?<a[^>]*href="/project/([^/]+)/"[^>]*>([^<]+)</a>.*?</h3>.*?<p[^>]*class="[^"]*package-snippet__description[^"]*"[^>]*>([^<]*)</p>.*?<span[^>]*class="[^"]*badge[^"]*"[^>]*>([^<]+)</span>',
-            
-            # Pattern 3: Simplified pattern
             r'href="/project/([^/]+)/"[^>]*>.*?>([^<]+)<.*?description[^>]*>([^<]*)<.*?version[^>]*>([^<]+)<',
         ]
         
@@ -655,10 +583,8 @@ class PyPIClient:
                 continue
         
         if not matches:  # type: ignore
-            # Fallback: try to find any project links
             project_links = re.findall(r'href="/project/([^/]+)/"', html_content)
             if project_links:
-                # Try to get info for found projects
                 for project_name in project_links[:max_results]:
                     try:
                         package_info = self.get_package_info(project_name)
@@ -673,7 +599,6 @@ class PyPIClient:
                         continue
                 return results
         
-        # Process matches
         for match in matches[:max_results]:  # type: ignore
             if len(match) >= 4:
                 project_name, display_name, description, version = match[:4]
@@ -681,12 +606,10 @@ class PyPIClient:
                 summary = description.strip() if description.strip() else "No description available"
                 version_clean = version.strip()
                 
-                # Score relevance
                 query_lower = query.lower()
                 name_lower = name.lower()
                 desc_lower = summary.lower()
                 
-                # Check if relevant
                 if (query_lower in name_lower or 
                     query_lower in desc_lower or 
                     any(word in name_lower for word in query_lower.split()) or
@@ -696,7 +619,6 @@ class PyPIClient:
                     if not any(r.name.lower() == result.name.lower() for r in results):
                         results.append(result)
         
-        # Sort by relevance (exact matches first)
         query_lower = query.lower()
         results.sort(key=lambda x: (
             0 if x.name.lower() == query_lower else
@@ -715,19 +637,16 @@ class PyPIClient:
         logger.info(f"cache_key: {cache_key}")
         logger.info(f"Config.use_redis: {Config.use_redis}")
 
-        # Try Redis cache first (faster)
         if cache_key and Config.use_redis:
             cached_data = self.redis_manager._get_from_redis(cache_key)
             logger.alert(f"cached_data: {cached_data}")  # type: ignore
             if cached_data:
                 return cached_data
         
-        # Try file cache second
         if cache_key and Config.use_cache:
             cached_data = self.cache_manager._get_from_cache(cache_key)
             logger.fatal(f"cached_data: {cached_data}")
             if cached_data:
-                # Promote to Redis cache for next time
                 if Config.use_redis:
                     redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
                 return cached_data
@@ -757,18 +676,14 @@ class PyPIClient:
     
     def find_package(self, query: str) -> Optional[str]:
         """Find package by search query. Returns exact package name or None."""
-        # First try exact match
         package_info = self.get_package_info(query)
         if package_info:
             return query
         
-        # If exact match fails, search for similar packages
         console.print(f"[yellow]📦 Package '{query}' not found. Searching for similar packages...[/yellow]")
         
-        # Try multiple search approaches
         search_results = self.search_packages(query, max_results=30)
         
-        # If no results from web search, try our pattern-based approach
         if not search_results:
             console.print(f"[yellow]🔍 Trying alternative search methods...[/yellow]")
             search_results = self._fallback_package_search(query)
@@ -782,22 +697,19 @@ class PyPIClient:
             console.print(f"[green]✅ Found similar package: {search_results[0].name}[/green]")
             return search_results[0].name
         
-        # Multiple results - show selection menu
         return self._show_package_selection(search_results, query)
     
     def _fallback_package_search(self, query: str) -> List[PyPISearchResult]:
         """Fallback search using pattern matching and popular packages."""
         results = []
         
-        # Generate search patterns
         patterns = self._generate_search_patterns(query)
         
         with console.status(f"[blue]🔍 Checking {len(patterns)} possible package names ...[/blue]", spinner="point"):
         
-            # Try each pattern
             checked = 0
             for pattern in patterns:
-                if checked >= 15:  # Limit API calls
+                if checked >= 15:
                     break
                     
                 try:
@@ -808,7 +720,6 @@ class PyPIClient:
                         summary = info.get('summary', 'No description available')
                         version = info.get('version', 'unknown')
                         
-                        # Check if not already in results
                         if not any(r.name.lower() == name.lower() for r in results):
                             results.append(PyPISearchResult(name, summary, version))
                             console.print(f"[dim]  ✓ Found: {name}[/dim]")
@@ -817,7 +728,6 @@ class PyPIClient:
                 except:
                     continue
         
-        # Also try fuzzy matching with popular packages
         if not results and len(query) > 2:
             results.extend(self._fuzzy_match_popular_packages(query))
         
@@ -826,48 +736,34 @@ class PyPIClient:
     def _fuzzy_match_popular_packages(self, query: str) -> List[PyPISearchResult]:
         """Try fuzzy matching with popular packages."""
         popular_packages = [
-            # Web frameworks
             'flask', 'django', 'fastapi', 'tornado', 'bottle', 'pyramid',
-            # Data science
             'pandas', 'numpy', 'matplotlib', 'seaborn', 'plotly', 'bokeh',
             'scipy', 'scikit-learn', 'tensorflow', 'torch', 'keras',
-            # Web scraping
             'requests', 'beautifulsoup4', 'scrapy', 'selenium', 'lxml',
-            # Databases
             'sqlalchemy', 'psycopg2', 'pymongo', 'redis', 'sqlite3',
-            # Image/Video
             'pillow', 'opencv-python', 'moviepy', 'imageio',
-            # APIs and data
             'tmdbsimple', 'imdbpy', 'tweepy', 'pygithub', 'wikipedia',
-            # Utilities
             'click', 'colorama', 'tqdm', 'rich', 'tabulate', 'pyyaml',
-            # Testing
             'pytest', 'unittest2', 'mock', 'nose',
-            # Async
             'asyncio', 'aiohttp', 'uvloop',
         ]
         
         results = []
         query_lower = query.lower()
         
-        # Find packages that contain the query or have similar words
         matches = []
         for pkg in popular_packages:
             pkg_lower = pkg.lower()
-            # Exact substring match
             if query_lower in pkg_lower:
                 matches.append((pkg, 1))
-            # Word boundary match
             elif any(word in pkg_lower for word in query_lower.split()):
                 matches.append((pkg, 2))
-            # Fuzzy match (simple character overlap)
             elif len(set(query_lower) & set(pkg_lower)) >= min(3, len(query_lower) - 1):
                 matches.append((pkg, 3))
         
-        # Sort by match quality and get info
         matches.sort(key=lambda x: x[1])
         
-        for pkg_name, _ in matches[:5]:  # Limit to top 5 matches
+        for pkg_name, _ in matches[:5]:
             try:
                 package_info = self.get_package_info(pkg_name)
                 if package_info:
@@ -886,7 +782,6 @@ class PyPIClient:
         """Show interactive package selection menu."""
         console.print(f"\n[bold yellow]🔍 Found {len(results)} packages matching '{query}':[/bold yellow]\n")
         
-        # Create selection table
         table = Table()
         table.add_column("#", style="bold cyan", width=3)
         table.add_column("Package Name", style="bold green", width=25)
@@ -894,7 +789,6 @@ class PyPIClient:
         table.add_column("Description", style="white")
         
         for i, result in enumerate(results, 1):
-            # Truncate long descriptions
             desc = result.summary
             if len(desc) > 80:
                 desc = desc[:77] + "..."
@@ -919,7 +813,6 @@ class PyPIClient:
             if choice == 0:
                 console.print("[yellow]⚠️  Selection cancelled[/yellow]")
                 sys.exit(0)
-                # return None
             
             if 1 <= choice <= len(results):
                 selected_package = results[choice - 1].name
@@ -940,11 +833,9 @@ class PyPIClient:
         if not package_info:
             return False
         
-        # Get the version to download
         if version is None or version == "latest":
             version = package_info['info']['version']
         
-        # Find the download URL
         releases = package_info.get('releases', {})
         if version not in releases:
             console.print(f"[red]❌ Version {version} not found for {package_name}[/red]")
@@ -955,7 +846,6 @@ class PyPIClient:
             console.print(f"[red]❌ No files available for {package_name} {version}[/red]")
             return False
         
-        # Prefer wheel files, then source distributions
         download_file = None
         for file_info in files:
             if file_info['packagetype'] == 'bdist_wheel':
@@ -969,9 +859,8 @@ class PyPIClient:
                     break
         
         if not download_file:
-            download_file = files[0]  # Fallback to first available
+            download_file = files[0]
         
-        # Download the file
         download_url = download_file['url']
         filename = download_file['filename']
         file_size = download_file.get('size', 0)
@@ -1053,13 +942,11 @@ class PackageInfoDisplay:
         version = info.get('version', 'Unknown')
         summary = info.get('summary', 'No description available')
         
-        # Create title with emoji
         title_text = Text()
         title_text.append("📦 ", style="bold blue")
         title_text.append(name, style="bold white")
         title_text.append(f" {version}", style="bold green")
         
-        # Summary
         summary_text = Text(summary, style="italic cyan")
         
         content = Align.center(
@@ -1082,7 +969,6 @@ class PackageInfoDisplay:
         table.add_column("Property", style="bold yellow", width=20)
         table.add_column("Value", style="white")
         
-        # Basic info
         basic_fields = [
             ("🏷️  Name", info.get('name', 'N/A')),
             ("🔢 Version", info.get('version', 'N/A')),
@@ -1097,7 +983,6 @@ class PackageInfoDisplay:
         
         for prop, value in basic_fields:
             if value and value != 'N/A':
-                # Truncate long values
                 if len(str(value)) > 50:
                     value = str(value)[:47] + "..."
                 table.add_row(prop, str(value))
@@ -1116,7 +1001,6 @@ class PackageInfoDisplay:
         
         for url_type, url in project_urls.items():
             if url:
-                # Truncate very long URLs
                 display_url = url if len(url) <= 60 else url[:57] + "..."
                 table.add_row(f"🌐 {url_type}", display_url)
         
@@ -1130,7 +1014,6 @@ class PackageInfoDisplay:
         
         tree = Tree("🏷️  [bold yellow]Classifiers")
         
-        # Group classifiers by category
         categories = {}
         for classifier in classifiers:
             parts = classifier.split(' :: ')
@@ -1143,7 +1026,7 @@ class PackageInfoDisplay:
         
         for category, items in categories.items():
             category_node = tree.add(f"[bold cyan]{category}")
-            for item in items[:5]:  # Limit to 5 items per category
+            for item in items[:5]:
                 category_node.add(f"[white]{item}")
             if len(items) > 5:
                 category_node.add(f"[dim]... and {len(items) - 5} more")
@@ -1158,7 +1041,6 @@ class PackageInfoDisplay:
         table.add_column("Files", style="yellow", width=10)
         table.add_column("Size", style="magenta", width=12)
         
-        # Sort versions by upload time (newest first)
         version_data = []
         for version, files in releases.items():
             if files:
@@ -1166,7 +1048,6 @@ class PackageInfoDisplay:
                 total_size = sum(f.get('size', 0) for f in files)
                 version_data.append((version, upload_time, len(files), total_size))
         
-        # Sort by upload time (newest first) and take top 10
         version_data.sort(key=lambda x: x[1], reverse=True)
         
         for i, (version, upload_time, file_count, total_size) in enumerate(version_data[:10]):
@@ -1185,19 +1066,97 @@ class PackageInfoDisplay:
             )
         
         return table
-    
+
+    # ------------------------------------------------------------------ #
+    #  NEW METHOD: display_all_versions                                    #
+    # ------------------------------------------------------------------ #
+    def display_all_versions(self, package_data: Dict[str, Any]):
+        """Display every available version of a package in a full table."""
+        info     = package_data.get('info', {})
+        releases = package_data.get('releases', {})
+        latest   = info.get('version', '')
+        name     = info.get('name', 'Unknown')
+
+        if not releases:
+            self.console.print("[yellow]⚠️  No releases found for this package[/yellow]")
+            return
+
+        # Build list sorted newest-first by upload time
+        version_data = []
+        for version, files in releases.items():
+            upload_time = ''
+            total_size  = 0
+            file_types  = set()
+            if files:
+                upload_time = files[0].get('upload_time_iso_8601', '')
+                total_size  = sum(f.get('size', 0) for f in files)
+                file_types  = {f.get('packagetype', '') for f in files}
+            version_data.append((version, upload_time, len(files), total_size, file_types))
+
+        version_data.sort(key=lambda x: x[1], reverse=True)
+
+        table = Table(
+            title=(
+                f"📦 All Versions — [bold white]{name}[/bold white]  "
+                f"([bold green]{len(version_data)}[/bold green] total)"
+            ),
+            box=None,
+            show_lines=False,
+        )
+        table.add_column("#",            style="dim",        width=5,  justify="right")
+        table.add_column("Version",      style="bold green", width=18)
+        table.add_column("Release Date", style="cyan",       width=22)
+        table.add_column("Files",        style="yellow",     width=7,  justify="right")
+        table.add_column("Size",         style="magenta",    width=12, justify="right")
+        table.add_column("Types",        style="bold blue")
+
+        for idx, (version, upload_time, file_count, total_size, file_types) in \
+                enumerate(version_data, start=1):
+
+            if version == latest:
+                ver_display = f"[bold white]{version}[/bold white] [bold red]◀ latest[/bold red]"
+            else:
+                ver_display = version
+
+            date_display = self.format_date(upload_time) if upload_time else "[dim]Unknown[/dim]"
+            size_display = self.format_size(total_size)  if total_size  else "[dim]—[/dim]"
+
+            type_labels = []
+            if 'bdist_wheel' in file_types:
+                type_labels.append("[green]wheel[/green]")
+            if 'sdist' in file_types:
+                type_labels.append("[yellow]sdist[/yellow]")
+            for t in sorted(file_types - {'bdist_wheel', 'sdist'}):
+                type_labels.append(f"[dim]{t}[/dim]")
+            types_display = "  ".join(type_labels) if type_labels else "[dim]—[/dim]"
+
+            table.add_row(
+                str(idx),
+                ver_display,
+                date_display,
+                str(file_count),
+                size_display,
+                types_display,
+            )
+
+        self.console.print()
+        self.console.print(table)
+        self.console.print()
+        self.console.print(
+            "[dim]💡 Use [bold]-v <version>[/bold] with [bold]--download[/bold] "
+            "to download a specific version[/dim]"
+        )
+
     def display_package_info(self, package_data: Dict[str, Any], show_last_only: bool = False, show_full: bool = False):
         """Display complete package information."""
         info = package_data.get('info', {})
         releases = package_data.get('releases', {})
         
-        # Header
         self.console.print()
         self.console.print(self.create_header_panel(info))
         self.console.print()
         
         if show_last_only:
-            # Show only latest version info
             latest_version = info.get('version', 'Unknown')
             latest_files = releases.get(latest_version, [])
             
@@ -1221,20 +1180,16 @@ class PackageInfoDisplay:
                 self.console.print("[yellow]⚠️  No files found for latest version[/yellow]")
             return
         
-        # Create layout columns
         left_column = []
         right_column = []
         
-        # Basic info (left column)
         basic_table = self.create_basic_info_table(info)
         left_column.append(Panel(basic_table, title="[bold green]ℹ️  Basic Information", border_style="green"))
         
-        # URLs (right column)
         urls_table = self.create_urls_table(info)
         if urls_table:
             right_column.append(Panel(urls_table, title="[bold blue]🔗 Links", border_style="blue"))
         
-        # Display two columns
         if left_column and right_column:
             self.console.print(Columns([left_column[0], right_column[0]], equal=True, expand=True))
             self.console.print()
@@ -1242,16 +1197,13 @@ class PackageInfoDisplay:
             self.console.print(left_column[0])
             self.console.print()
         
-        # Classifiers tree
         classifiers_tree = self.create_classifiers_tree(info)
         if classifiers_tree:
             self.console.print(Panel(classifiers_tree, title="[bold yellow]🏷️  Categories", border_style="yellow"))
             self.console.print()
         
-        # Description
         description = info.get('description', '').strip()
         if description and len(description) > 100:
-            # Try to render as markdown if it looks like markdown
             if any(marker in description for marker in ['#', '*', '`', '```', '[', '](']):
                 try:
                     if show_full:
@@ -1261,7 +1213,6 @@ class PackageInfoDisplay:
                     self.console.print(Panel(md, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
                 except:
-                    # Fallback to plain text
                     desc_text = description[:1000] + ("..." if len(description) > 1000 else "")
                     self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                     self.console.print()
@@ -1270,31 +1221,30 @@ class PackageInfoDisplay:
                 self.console.print(Panel(desc_text, title="[bold cyan]📖 Description", border_style="cyan"))
                 self.console.print()
         
-        # Recent releases
         if releases:
             releases_table = self.create_releases_table(releases, info.get('version', ''))
             self.console.print(releases_table)
             self.console.print()
         
-        # Statistics
         total_files = sum(len(files) for files in releases.values())
-        total_size = sum(sum(f.get('size', 0) for f in files) for files in releases.values())
+        total_size  = sum(sum(f.get('size', 0) for f in files) for files in releases.values())
         
         stats_table = Table(show_header=False, box=None, padding=(0, 2))
         stats_table.add_column("Metric", style="bold yellow")
-        stats_table.add_column("Value", style="bold white")
+        stats_table.add_column("Value",  style="bold white")
         
         stats_table.add_row("📊 Total Versions", str(len(releases)))
-        stats_table.add_row("📁 Total Files", str(total_files))
-        stats_table.add_row("💾 Total Size", self.format_size(total_size))
+        stats_table.add_row("📁 Total Files",    str(total_files))
+        stats_table.add_row("💾 Total Size",     self.format_size(total_size))
         
+        self.console.print(Panel(stats_table, title="[bold magenta]📈 Statistics", border_style="magenta"))
+
     def display_requirements(self, info: Dict[str, Any], package_name: str, export: bool = False, export_name: str|None = None):
         try:
             """Display package requirements in a beautiful format."""
-            requires_dist = info.get('requires_dist', [])
+            requires_dist   = info.get('requires_dist', [])
             requires_python = info.get('requires_python', None)
 
-            # Create main requirements panel
             if not requires_dist and not requires_python:
                 self.console.print(f"[yellow]📋 No dependencies found for {package_name}[/yellow]")
                 return
@@ -1304,7 +1254,6 @@ class PackageInfoDisplay:
                     f_req.write("\n".join(requires_dist))
                     self.console.print(f"✅ [bold #FFFF00]success export requirements to[/] [bold #00FFFF]{f_req.name}[/]")
 
-            # Header
             title_text = Text()
             title_text.append("📋 ", style="bold blue")
             title_text.append(f"Requirements for {package_name}", style="bold white")
@@ -1318,7 +1267,6 @@ class PackageInfoDisplay:
             ))
             self.console.print()
             
-            # Python version requirement
             if requires_python:
                 python_table = Table(show_header=False, box=None)
                 python_table.add_column("", style="bold yellow", width=20)
@@ -1332,7 +1280,6 @@ class PackageInfoDisplay:
                 ))
                 self.console.print()
             
-            # Parse and categorize dependencies
             if requires_dist:
                 deps = self._parse_dependencies(requires_dist)
                 
@@ -1348,7 +1295,6 @@ class PackageInfoDisplay:
                 if deps['test']:
                     self._display_dependency_table(deps['test'], "🧪 Testing Dependencies", "cyan")
             
-            # Show total count
             total_deps = len(requires_dist) if requires_dist else 0
             self.console.print(f"[dim]💡 Total dependencies: {total_deps}[/dim]")
         except Exception as e:
@@ -1370,10 +1316,8 @@ class PackageInfoDisplay:
             if not req:
                 continue
             
-            # Parse the requirement string
             dep_info = self._parse_single_requirement(req)
             
-            # Categorize based on extras or markers
             req_lower = req.lower()
             if any(marker in req_lower for marker in ['extra == "dev"', 'extra == "development"']):
                 deps['dev'].append(dep_info)
@@ -1392,8 +1336,8 @@ class PackageInfoDisplay:
             return
         
         table = Table(box=None)
-        table.add_column("Package", style="bold green", width=25)
-        table.add_column("Version", style="bold yellow", width=20)
+        table.add_column("Package",   style="bold green",  width=25)
+        table.add_column("Version",   style="bold yellow", width=20)
         table.add_column("Condition", style="cyan")
         
         for dep in deps:
@@ -1418,12 +1362,10 @@ class PackageInfoDisplay:
     
     def _parse_single_requirement(self, req: str) -> Dict[str, str]:
         """Parse a single requirement string into name, version, marker."""
-        # Split by semicolon to separate package from markers
-        parts = req.split(";", 1)
+        parts        = req.split(";", 1)
         package_part = parts[0].strip()
-        marker_part = parts[1].strip() if len(parts) > 1 else ""
+        marker_part  = parts[1].strip() if len(parts) > 1 else ""
 
-        # Extract package name and version
         version_pattern = r"^([a-zA-Z0-9][a-zA-Z0-9\-_.]*)\s*([><=!~\s].*)?$"
         match = re.match(version_pattern, package_part)
         if match:
@@ -1433,18 +1375,17 @@ class PackageInfoDisplay:
             package_name = package_part
             version_spec = ""
 
-        # Clean version spec
         if version_spec:
             version_spec = re.sub(r"\s+", " ", version_spec).strip()
 
         return {
-            "name": package_name,
+            "name":    package_name,
             "version": version_spec or "any",
-            "marker": marker_part,
-            "raw": req
+            "marker":  marker_part,
+            "raw":     req
         }
 
-def get_download_path(path = None, package_name = None):
+def get_download_path(path=None, package_name=None):
     path = os.getenv('DOWNLOAD_PATH', path or os.getcwd())
     if package_name:
         path = os.path.join(path, package_name)
@@ -1452,12 +1393,6 @@ def get_download_path(path = None, package_name = None):
     return path
 
 def get_version():
-    """
-    Get the version of the ddf module.
-    Version is taken from the __version__.py file if it exists.
-    The content of __version__.py should be:
-    version = "0.33"
-    """
     try:
         version_file = Path(__file__).parent / "__version__.py"
         if version_file.is_file():
@@ -1494,7 +1429,17 @@ def main():
         action='store_true',
         help='🔍 Show only the latest version information'
     )
-    
+
+    # ------------------------------------------------------------------ #
+    #  NEW FLAG: --all-versions / -A                                       #
+    # ------------------------------------------------------------------ #
+    parser.add_argument(
+        '-A', '--all-versions',
+        action='store_true',
+        dest='all_versions',
+        help='📋 Show all available versions of the package'
+    )
+
     parser.add_argument(
         '-d', '--download',
         action='store_true',
@@ -1571,21 +1516,26 @@ def main():
         help='🚿 Show all'
     )
     
-    parser.add_argument('-V', '--version', action='version', version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]", help="Show version")
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]",
+        help="Show version"
+    )
     
     args = parser.parse_args()
     
-    # Show help if no package specified
     if not args.package:
         parser.print_help()
         return
+
     if args.gui and HAS_GUI:
         gui(args.package[0])
         sys.exit(0)
     elif args.gui and not HAS_GUI:
         console.print("[red]❌ GUI dependencies not installed. Please install 'pyqt5' and 'pygments' to use the GUI mode.[/red]")
-    # Initialize client and display
-    client = PyPIClient()
+
+    client  = PyPIClient()
     display = PackageInfoDisplay()
     
     # Handle search-only mode
@@ -1598,17 +1548,15 @@ def main():
                 console.print(f"[red]❌ No packages found matching '{pack}'[/red]")
                 return
             
-            # Display search results
             table = Table(title=f"🔍 Search Results for '{pack}'")
             table.add_column("Package Name", style="bold green", width=30)
-            table.add_column("Version", style="bold yellow", width=12)
-            table.add_column("Description", style="white")
+            table.add_column("Version",      style="bold yellow", width=12)
+            table.add_column("Description",  style="white")
             
             for result in search_results:
                 desc = result.summary
                 if len(desc) > 100:
                     desc = desc[:97] + "..."
-                
                 table.add_row(result.name, result.version, desc)
             
             console.print(table)
@@ -1616,34 +1564,30 @@ def main():
                 return
     
     for i, pack in enumerate(args.package):
-        # Find the package (with smart search)
         console.print(f"\n[bold blue]🔍 Looking for package '{pack}'...[/bold blue]")
         package_name = client.find_package(pack)
-        
-        # if i == len(args.package) - 1: return
 
-        # Get detailed package information
         package_data = client.get_package_info(package_name)
         
         if not package_data:
             console.print(f"[red]❌ Could not fetch details for package '{package_name}'[/red]")
-            # return
         
         info = package_data.get('info', {})
     
-        # Handle specific info requests
         if args.author:
-            author = info.get('author', 'N/A')
+            author       = info.get('author', 'N/A')
             author_email = info.get('author_email', 'N/A')
             console.print(f"[bold yellow]👤 Author:[/bold yellow] {author}")
             if author_email != 'N/A':
                 console.print(f"[bold yellow]📧 Email:[/bold yellow] {author_email}")
-            if i == len(args.package) - 1: return
+            if i == len(args.package) - 1:
+                return
         
         if args.home:
             home_page = info.get('home_page') or info.get('project_urls', {}).get('Homepage', 'N/A')
             console.print(f"[bold yellow]🏠 Home Page:[/bold yellow] {home_page}")
-            if i == len(args.package) - 1: return
+            if i == len(args.package) - 1:
+                return
         
         if args.tags:
             classifiers = info.get('classifiers', [])
@@ -1653,7 +1597,8 @@ def main():
                     console.print(f"  • {classifier}")
             else:
                 console.print("[yellow]No classifiers found[/yellow]")
-            if i == len(args.package) - 1: return
+            if i == len(args.package) - 1:
+                return
         
         if args.urls:
             project_urls = info.get('project_urls', {})
@@ -1664,30 +1609,42 @@ def main():
             else:
                 console.print("[yellow]No project URLs found[/yellow]")
             return
+
+        # ------------------------------------------------------------------ #
+        #  Handle --all-versions                                               #
+        # ------------------------------------------------------------------ #
+        if args.all_versions:
+            display.display_all_versions(package_data)
+            if i == len(args.package) - 1:
+                return
         
         if args.requirements:
-            # jprint(info)
             display.display_requirements(info, package_name, args.export, args.export_name)  # type: ignore
-            if i == len(args.package) - 1: return
+            if i == len(args.package) - 1:
+                return
         
-        # Download package if requested
         if args.download:
             version = args.version_download or "latest"
             console.print(f"\n[bold green]📥 Downloading {package_name} (version: {version})...[/bold green]")
-            success = client.download_package(package_name, version, get_download_path(args.path, package_name if os.getenv('DOWNLOAD_IN_SUBFOLDER', '1') in ['1', 'true', 'True'] else None))  # type: ignore
+            success = client.download_package(
+                package_name, version,
+                get_download_path(
+                    args.path,
+                    package_name if os.getenv('DOWNLOAD_IN_SUBFOLDER', '1') in ['1', 'true', 'True'] else None
+                )
+            )
             if not success:
                 console.print(f"\n:cross_mark: [white on red]Failed to download '{package_name}'[/]")
-                # return
             console.print()
-            if i == len(args.package) - 1: return
+            if i == len(args.package) - 1:
+                return
         
-        # Display package information
-        if not args.requirements and not args.download and not args.author and not args.home and not args.urls:
+        if not args.requirements and not args.download and not args.author \
+                and not args.home and not args.urls and not args.all_versions:
             display.display_package_info(package_data, args.last, args.full)  # type: ignore
 
-        print("="*os.get_terminal_size()[0])
+        print("=" * os.get_terminal_size()[0])
         
-    # Final message
     console.print(f"[dim]💡 Use --download to download this package, or --help for more options[/dim]")
 
 if __name__ == "__main__":

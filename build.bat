@@ -17,8 +17,8 @@ if %errorlevel% neq 0 (
 )
 
 :: 3. Upload ke Private Repo (pypihub)
-echo Uploading to Private Repo...
-twine upload dist\* -r pypihub
+:: echo Uploading to Private Repo...
+:: twine upload dist\* -r pypihub
 
 :: 4. Upload Logic to Public PyPI (Script arguments)
 :: IF structure fixed: Space before bracket, and ELSE one line with closing bracket
