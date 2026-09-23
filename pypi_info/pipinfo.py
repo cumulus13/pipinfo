@@ -1571,6 +1571,7 @@ def main():
         
         if not package_data:
             console.print(f"[red]❌ Could not fetch details for package '{package_name}'[/red]")
+            return
         
         info = package_data.get('info', {})
     
