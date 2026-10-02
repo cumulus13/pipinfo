@@ -27,7 +27,7 @@ if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
 else:
     os.environ['NO_LOGGING'] = "1"
 
-print(f"LOG_LEVEL            [2]: {LOG_LEVEL}")
+# print(f"LOG_LEVEL            [2]: {LOG_LEVEL}")
 
 try:
     from richcolorlog import setup_logging, print_exception as tprint  # type: ignore
