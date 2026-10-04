@@ -55,6 +55,11 @@ if not tprint:  # type: ignore
     def tprint(*args, **kwargs):
         traceback.print_exc()
 
+# richcolorlog has .alert/.fatal; stdlib-style fallback loggers may not
+for _lvl in ('alert', 'fatal'):
+    if not hasattr(logger, _lvl):
+        setattr(logger, _lvl, logger.debug)
+
 def get_config_file():
     config_file = None
     if sys.platform == 'win32':
@@ -114,21 +119,23 @@ import argparse
 import json
 import urllib.request
 import urllib.parse
+import urllib.error
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
 HAS_GUI = False
+GUI_IMPORT_ERROR = None
 try:
     from .gui_qt5 import main as gui
     HAS_GUI = True
 except Exception as e:
-    print(f"GUI components could not be imported: {e}: Please install PyQt5 and Pygments for GUI support.")
+    GUI_IMPORT_ERROR = e
     try:
         from gui_qt5 import main as gui
         HAS_GUI = True
-    except:
-        pass
+    except Exception as e2:
+        GUI_IMPORT_ERROR = e2
 
 try:
     from rich.console import Console
@@ -140,6 +147,7 @@ try:
     from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
     from rich.tree import Tree
     from rich.align import Align
+    from rich.markup import escape
     from rich.prompt import Prompt, IntPrompt
     from rich_argparse import RichHelpFormatter, _lazy_rich as rr
     from rich import traceback as rich_traceback
@@ -179,13 +187,21 @@ class CustomRichHelpFormatter(RichHelpFormatter):
     except Exception as e:  # type: ignore
         styles = {}  # type: ignore
 
+def _env_bool(name: str, default: bool) -> bool:
+    v = os.getenv(name)  # envdot may return typed values (int/bool), not only str
+    if v is None:
+        return default
+    if isinstance(v, str):
+        return v.strip().lower() in ('1', 'true', 'yes', 'on')
+    return bool(v)
+
 @dataclass
 class ConfigManager:
     CACHE_DIR: Path = Path(os.getenv("CACHE_DIR", Path.home() / ".pypi_info" / "cache"))
-    CACHE_EXPIRY: int = os.getenv("CACHE_EXPIRY", 3600)  # type: ignore
+    CACHE_EXPIRY: int = int(os.getenv("CACHE_EXPIRY", 3600))
     REDIS_PREFIX: str = os.getenv("REDIS_PREFIX", "pipr_cache:")
-    use_cache: bool = os.getenv("USE_CACHE", True)  # type: ignore
-    use_redis: bool = os.getenv("USE_REDIS", True)  # type: ignore
+    use_cache: bool = _env_bool("USE_CACHE", True)
+    use_redis: bool = _env_bool("USE_REDIS", True)
     redis_client: Optional[Any] = None  # type: ignore
 
 Config = ConfigManager()
@@ -360,6 +376,7 @@ class CacheManager:
         cache_path = self._get_cache_path(cache_key)
         
         try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
             with open(cache_path, 'wb') as f:
                 pickle.dump(data, f)
             logger.debug(f"File cached: {cache_key}")
@@ -426,14 +443,16 @@ class PyPIClient:
             if cached_data:
                 html_content = cached_data.get("data")
         
-        elif cache_key and Config.use_cache:
+        if not html_content and cache_key and Config.use_cache:
             cached_data = self.cache_manager._get_from_cache(cache_key)
             logger.fatal(f"cached_data: {cached_data}")
             if cached_data:
                 if Config.use_redis:
-                    redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
+                    self.redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
                 html_content = cached_data.get("data")
-        else:
+
+        fetched = not html_content
+        if fetched:
             try:
                 search_url = f"https://pypi.org/search/?q={urllib.parse.quote(query)}&o=&c="
                 
@@ -446,7 +465,7 @@ class PyPIClient:
             except Exception as e:
                 pass
 
-        if cache_key and html_content:  # type: ignore
+        if cache_key and html_content and fetched:  # only cache fresh fetches (re-saving cache hits resets mtime -> never expires)
             if Config.use_cache:
                 self.cache_manager._save_to_cache(cache_key, {"data": html_content})  # type: ignore
             if Config.use_redis:
@@ -477,7 +496,7 @@ class PyPIClient:
                             info.get('summary', 'No description available'),
                             info.get('version', 'unknown')
                         )
-                        if result not in [r.name for r in results]:
+                        if result.name.lower() not in [r.name.lower() for r in results]:
                             results.append(result)
                 except:
                     continue
@@ -629,7 +648,7 @@ class PyPIClient:
         
         return results
     
-    def get_package_info(self, package_name: str) -> Optional[Dict[str, Any]]:
+    def get_package_info(self, package_name: str, silent: bool = False) -> Optional[Dict[str, Any]]:
         """Fetch package information from PyPI API."""
         url = f"{self.BASE_URL}/{package_name}/json"
         
@@ -648,12 +667,13 @@ class PyPIClient:
             logger.fatal(f"cached_data: {cached_data}")
             if cached_data:
                 if Config.use_redis:
-                    redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
+                    self.redis_manager._save_to_redis(cache_key, cached_data)  # type: ignore
                 return cached_data
         
         try:
-            with console.status(f"[bold blue]🔍 Fetching details for '{package_name}'...", spinner="dots"):
-                req = urllib.request.Request(url, headers=self.session_headers)
+            req = urllib.request.Request(url, headers=self.session_headers)
+            
+            def do_fetch():
                 with urllib.request.urlopen(req, timeout=10) as response:
                     if response.status == 200:
                         data = json.loads(response.read().decode('utf-8'))
@@ -664,16 +684,56 @@ class PyPIClient:
                         return data
                     else:
                         return None
-        except urllib.error.HTTPError as e:  # type: ignore
-            if e.code == 404:
-                console.print(f"[red]❌ Package '{package_name}' not found on PyPI[/red]")
+                        
+            if silent:
+                return do_fetch()
             else:
-                console.print(f"[red]❌ HTTP Error {e.code}: {e.reason}[/red]")
+                with console.status(f"[bold blue]🔍 Fetching details for '{package_name}'...", spinner="dots"):
+                    return do_fetch()
+                    
+        except urllib.error.HTTPError as e:  # type: ignore
+            if not silent:
+                if e.code == 404:
+                    console.print(f"[red]❌ Package '{package_name}' not found on PyPI[/red]")
+                else:
+                    console.print(f"[red]❌ HTTP Error {e.code}: {e.reason}[/red]")
             return None
         except Exception as e:
-            console.print(f"[red]❌ Error fetching package info: {str(e)}[/red]")
+            if not silent:
+                console.print(f"[red]❌ Error fetching package info: {str(e)}[/red]")
             return None
     
+    def check_package(self, name: str, retries: int = 3, timeout: int = 30, verbose: bool = False):
+        """Check one package on PyPI. Returns (state, version, detail).
+
+        state: 'found' | 'missing' (HTTP 404 only) | 'error' (network/server problem, NOT proof it is missing)
+        """
+        url = f"{self.BASE_URL}/{urllib.parse.quote(name)}/json"
+        last = "unknown error"
+        for attempt in range(1, retries + 1):
+            t0 = time.time()
+            try:
+                req = urllib.request.Request(url, headers=self.session_headers)
+                with urllib.request.urlopen(req, timeout=timeout) as r:
+                    raw = r.read()
+                    status_code = r.status
+                data = json.loads(raw.decode('utf-8'))
+                version = data.get('info', {}).get('version', 'Unknown')
+                return 'found', version, f"HTTP {status_code}, {len(raw) / 1024:.0f} KB, {time.time() - t0:.2f}s, attempt {attempt}"
+            except urllib.error.HTTPError as e:  # must come before URLError/OSError (it subclasses both)
+                if e.code == 404:
+                    return 'missing', '-', f"HTTP 404, {time.time() - t0:.2f}s"
+                last = f"HTTP {e.code} {e.reason}"
+                if e.code not in (429, 500, 502, 503, 504):
+                    break
+            except Exception as e:  # timeout, DNS, connection reset, bad JSON, ...
+                last = f"{type(e).__name__}: {e}"
+            if verbose:
+                console.print(f"[dim]  {escape(name)}: attempt {attempt}/{retries} failed after {time.time() - t0:.2f}s: {escape(last)}[/dim]")
+            if attempt < retries:
+                time.sleep(min(2 ** attempt, 8))
+        return 'error', '-', last
+
     def find_package(self, query: str) -> Optional[str]:
         """Find package by search query. Returns exact package name or None."""
         package_info = self.get_package_info(query)
@@ -1068,7 +1128,7 @@ class PackageInfoDisplay:
         return table
 
     # ------------------------------------------------------------------ #
-    #  NEW METHOD: display_all_versions                                    #
+    #  NEW METHOD: display_all_versions                                  #
     # ------------------------------------------------------------------ #
     def display_all_versions(self, package_data: Dict[str, Any]):
         """Display every available version of a package in a full table."""
@@ -1385,6 +1445,21 @@ class PackageInfoDisplay:
             "raw":     req
         }
 
+def parse_requirements_file(path: str) -> List[str]:
+    """Package names from a requirements file. Skips comments, options (-r/-e/--x), paths and URLs."""
+    names: List[str] = []
+    seen = set()
+    with open(path, 'r', encoding='utf-8-sig') as f:
+        for raw in f:
+            line = re.split(r'\s#', raw, maxsplit=1)[0].strip()
+            if not line or line.startswith(('#', '-', '.', '/', 'git+', 'http://', 'https://')):
+                continue
+            m = re.match(r'[A-Za-z0-9][A-Za-z0-9._-]*', line)
+            if m and m.group(0).lower() not in seen:
+                seen.add(m.group(0).lower())
+                names.append(m.group(0))
+    return names
+
 def get_download_path(path=None, package_name=None):
     path = os.getenv('DOWNLOAD_PATH', path or os.getcwd())
     if package_name:
@@ -1422,6 +1497,12 @@ def main():
         'package',
         nargs='*',
         help='📦 Packages name or search query'
+    )
+    
+    parser.add_argument(
+        '-c', '--check',
+        metavar='FILE',
+        help='❓ Check packages existence from a requirements.txt file'
     )
     
     parser.add_argument(
@@ -1522,22 +1603,111 @@ def main():
         version=f"[bold #FFFF00]version:[/] [bold #00FFFF]{get_version()}[/]",
         help="Show version"
     )
+
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='🐞 Enable debug logging'
+    )
+
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='🔊 With -c: show HTTP status, size, timing and retry reasons per package'
+    )
+
+    parser.add_argument(
+        '--retries',
+        type=int,
+        default=3,
+        help='🔁 With -c: attempts per package on network/server errors (default: 3)'
+    )
+
+    parser.add_argument(
+        '--timeout',
+        type=int,
+        default=30,
+        help='⏱️  With -c: per-request timeout in seconds (default: 30)'
+    )
+    
+    from rich.markup import escape
     
     args = parser.parse_args()
     
-    if not args.package:
+    if not args.package and not args.check:
         parser.print_help()
         return
 
     if args.gui and HAS_GUI:
-        gui(args.package[0])
+        gui(args.package[0] if args.package else None)
         sys.exit(0)
     elif args.gui and not HAS_GUI:
-        console.print("[red]❌ GUI dependencies not installed. Please install 'pyqt5' and 'pygments' to use the GUI mode.[/red]")
+        from rich.markup import escape
+        console.print(f"[red]❌ GUI dependencies not installed ({escape(str(GUI_IMPORT_ERROR))}). Please install 'pyqt5' and 'pygments' to use the GUI mode.[/red]")
 
     client  = PyPIClient()
     display = PackageInfoDisplay()
     
+    if args.check:
+        filepath = args.check
+        if not os.path.exists(filepath):
+            console.print(f"[red]❌ File not found: {filepath}[/red]")
+            sys.exit(1)
+            
+        packages_to_check = parse_requirements_file(filepath)
+                
+        results = []  # (pkg, state, version, detail)
+        for pkg in packages_to_check:
+            status_text = f"❓ [bold #FFFF00]check[/] [bold #00FFFF]'{pkg}'[/]"
+            with console.status(status_text, spinner="point", spinner_position='right', persist='half') as status:
+                state, version, detail = client.check_package(
+                    pkg, retries=args.retries, timeout=args.timeout, verbose=args.verbose
+                )
+                if state == 'found':
+                    status.update(f"✅ [bold #FFFF00]check[/] [bold #00FFFF]'{pkg}'[/] [bold #00FF00]EXIST[/]")
+                elif state == 'missing':
+                    status.update(f"❌ [bold #FFFF00]check[/] [bold #00FFFF]'{pkg}'[/] [bold #FF0000]NOT FOUND[/]")
+                else:
+                    status.update(f"⚠️  [bold #FFFF00]check[/] [bold #00FFFF]'{pkg}'[/] [bold #FF8800]ERROR[/] [dim]{escape(detail)}[/]")
+                results.append((pkg, state, version, detail))
+            if args.verbose:
+                console.print(f"[dim]  {escape(pkg)}: {escape(detail)}[/dim]")
+                    
+        console.print()
+        table = Table(title=f"📋 Check Results from {filepath}")
+        table.add_column("#", style="dim", justify="right")
+        table.add_column("Package Name", style="bold cyan")
+        table.add_column("Status", style="bold")
+        table.add_column("Latest Version", style="yellow")
+        if args.verbose:
+            table.add_column("Detail", style="dim")
+
+        labels = {
+            'found':   "[green]✅ EXIST[/green]",
+            'missing': "[red]❌ NOT FOUND[/red]",
+            'error':   "[yellow]⚠️  ERROR[/yellow]",
+        }
+        for idx, (pkg, state, version, detail) in enumerate(results, 1):
+            row = [str(idx), pkg, labels[state], version]
+            if args.verbose:
+                row.append(escape(detail))
+            table.add_row(*row)
+            
+        console.print(table)
+
+        errors  = [r for r in results if r[1] == 'error']
+        missing = [r for r in results if r[1] == 'missing']
+        if errors:
+            console.print(
+                f"[yellow]⚠️  {len(errors)} package(s) could not be checked (network/server error, "
+                f"not necessarily missing): {', '.join(r[0] for r in errors)}[/yellow]"
+            )
+            console.print("[dim]💡 Re-run with --verbose to see the reason, or raise --timeout / --retries[/dim]")
+        
+        # No positional packages: exit 2 on check errors, 1 if any package missing, else 0 (CI-friendly)
+        if not args.package:
+            sys.exit(2 if errors else (1 if missing else 0))
+            
     # Handle search-only mode
     if args.search_only:
         for i, pack in enumerate(args.package):
@@ -1566,6 +1736,8 @@ def main():
     for i, pack in enumerate(args.package):
         console.print(f"\n[bold blue]🔍 Looking for package '{pack}'...[/bold blue]")
         package_name = client.find_package(pack)
+        if not package_name:
+            continue
 
         package_data = client.get_package_info(package_name)
         
@@ -1644,7 +1816,7 @@ def main():
                 and not args.home and not args.urls and not args.all_versions:
             display.display_package_info(package_data, args.last, args.full)  # type: ignore
 
-        print("=" * os.get_terminal_size()[0])
+        console.rule()
         
     console.print(f"[dim]💡 Use --download to download this package, or --help for more options[/dim]")
 

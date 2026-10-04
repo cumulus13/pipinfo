@@ -39,3 +39,6 @@ backup/
 
 # Added entries (1 items)
 *.1
+
+# Added entries (1 items)
+*.patch
