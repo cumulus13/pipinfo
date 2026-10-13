@@ -12,9 +12,9 @@ import sys
 # from ctraceback import CTraceback
 # sys.excepthook = CTraceback()
 
-with open("debug.log", "w") as f:
-    f.write("Script started!\n")
-    f.write(f"Args: {sys.argv}\n")
+# with open("debug.log", "w") as f:
+#     f.write("Script started!\n")
+#     f.write(f"Args: {sys.argv}\n")
 
 
 import os
