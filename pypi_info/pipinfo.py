@@ -12,11 +12,11 @@ from pathlib import Path
 import traceback
 
 tprint = None  # type: ignore
-LOG_LEVEL = "NO"
+LOG_LEVEL = "CRITICAL"
 
 exceptions=['pika', 'urllib', 'urllib2', 'urllib3', 'markdown_it', 'markdown', 'subprocess', 'pillow', 'PIL', 'requests', 'pyqt5']
 
-if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
+if (len(sys.argv) > 1 and '--debug' in sys.argv[1:]) or str(os.getenv('PIPINFO_DEBUG', '0')).lower() in ('1', 'true', 'ok', 'on', 'yes'):
     print("🐞 Debug mode enabled")
     os.environ["DEBUG"] = "1"
     os.environ['LOGGING'] = "1"
@@ -27,13 +27,11 @@ if len(sys.argv) > 1 and any('--debug' == arg for arg in sys.argv):
 else:
     os.environ['NO_LOGGING'] = "1"
 
-# print(f"LOG_LEVEL            [2]: {LOG_LEVEL}")
-
 try:
     from richcolorlog import setup_logging, print_exception as tprint  # type: ignore
     logger = setup_logging(
         name="pypi_info",
-        level=LOG_LEVEL,
+        level="EMERGENCY" if LOG_LEVEL == 'CRITICAL' else LOG_LEVEL,
         exceptions=exceptions
     )
     HAS_RICHCOLORLOG=True
